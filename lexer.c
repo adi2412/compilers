@@ -5,12 +5,13 @@
 // Second semester 2014
 */
 #include <stdlib.h>
-#include 'lexer.h'	// Might be changed to another header file for the tokens.
+#include <stdio.h>
+//#include 'lexer.h'	// Might be changed to another header file for the tokens.
+#include 'tokens.h'
 
 #define BUFFERSIZE 1024
 
 typedef int buffersize;
-typedef char* buffer;
 
 // Buffer structure
 typedef struct _buffer
@@ -38,7 +39,7 @@ tokenInfo getNextToken(buffer B)
 //		input: pointer to file.
 //		output: header to the first token which forms a linked list.
 */
-tokenInfo lexer(File *fp)
+tokenInfo lexer(FILE *fp)
 {
 	FILE *source = fp;
 	// Initialise tokenInfo
@@ -59,19 +60,19 @@ tokenInfo lexer(File *fp)
 		/* Send to state checker. */
 		// Handle when buffer is not enough? Here or in getNextToken?
 		tokens = getNextToken(curBuff);
-		if(tokens == null)
+		if(tokens == NULL)
 		{
 			// The current buffer ran out while reading. Use other buffer.
 			if(curBuff == firstBuff)
 			{
 				// The first buffer was current. Use the second.
-				getstream(fp, secondBuff, BUFFERSIZE);
+				getStream(fp, secondBuff, BUFFERSIZE);
 				curBuff = secondBuff;
 			}
 			else
 			{
 				// The second buffer was current.
-				getstream(fp, firstBuff, BUFFERSIZE);
+				getStream(fp, firstBuff, BUFFERSIZE);
 				curBuff = firstBuff;
 			}
 		}
