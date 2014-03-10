@@ -9,7 +9,7 @@
 
 FILE *getStream(FILE *fp, buffer B, buffersize k);
 tokenInfo getNextToken(FILE *fp);
-
+tokenInfo	lexer(FILE *fp);
 
 
 

@@ -45,7 +45,7 @@ typedef enum tokens{
 	LE,
 	EQ,
 	GT,
-	LE,
+	GE,
 	NE
 } token;
 
