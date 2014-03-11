@@ -7,7 +7,7 @@
 
 //LEGEND:
 //UPDATE: need more information to decide
-//!WRONG!: clearly wrong, need to modify accordingly
+//!MODIFY!: possibly wrong, need to modify accordingly
 //CONSIDER: need to think this through
 #include <stdlib.h>
 #include <stdio.h>
