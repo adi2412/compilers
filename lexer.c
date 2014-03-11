@@ -4,6 +4,11 @@
 // BITS Pilani, Pilani Campus
 // Second semester 2014
 */
+
+//LEGEND:
+//UPDATE: need more information to decide
+//!MODIFY!: possibly wrong, need to modify accordingly
+//CONSIDER: need to think this through
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,8 +16,9 @@
 #include 'tokens.h'
 
 #define BUFFERSIZE 1024
-#define FUNSIZE 20 // Don't know the correct value currently
-#define IDSIZE 20
+#define FUNSIZE 20 // Don't know the correct value currently UPDATE
+#define IDSIZE 20 //UPDATE
+#define NUMSIZE 20 //UPDATE
 
 typedef int buffersize;
 
@@ -45,7 +51,36 @@ FILE *getStream(FILE *fp, buffer B, buffersize k)
 
 tokenInfo getEndCommentAndNextToken(buffer B)
 {
+	//currently, a comment body is being traversed. we need to look for comment end and then return next token
+	//will start incrementing fwdPointer within while loop
+	while(B->fwdPointer < BUFFERSIZE && (B->buff[B->fwdPointer]!= '\n' && B->buff[B->fwdPointer]!= EOF))
+		{
+			++B->fwdPointer;
+		}
+		// Any of the above cases means we have reached the end of the current buffer. Check if exceeded buffer length
 
+		if(B->buff[B->fwdPointer] == '\n' || B->buff[B->fwdPointer] == EOF)
+		{
+			// The comment has ended. Get the next token and return it.
+			++B->lineNumber;
+			getStream(fp, B->nextBuffer, BUFFERSIZE);
+			// Set current buffer to next buffer
+			B = B->nextBuffer;
+			// Keep checking for how long comments go and return next token.
+			return getNextToken(fp, B);
+		}
+		if(B->fwdPointer >= BUFFERSIZE)
+		{
+			// The comment has overflowed to next buffer. Finish reading comment and return the next token.
+			getStream(fp, B->nextBuffer, BUFFERSIZE);
+			// Set current buffer to next buffer
+			B = B->nextBuffer;
+			// Keep checking for how long comments go and return next token.
+			return getEndCommentAndNextToken(fp, B);
+		}
+		//hope this works
+		//is a return needed for default case? the 2 if blocks above should be sufficient..
+		//check website for info if error to be returned after 2 buffers full of comment. UPDATE
 }
 
 char* joinStrings(char* alp, char* str)
@@ -187,7 +222,66 @@ tokenInfo getStringToken(buffer B, int i)
 }
 
 tokenInfo getNumberToken(buffer B)
-{
+{	
+	//integers, and real number upto 2 decimal places supported
+	tokenInfo numToken = malloc(sizeof(tokenInfo));
+	char* alphabet = malloc(NUMSIZE*sizeof(char));
+	int i=0;
+	alphabet[i++] = B->buff[B->fwdPointer];
+
+
+	while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE)  //UPDATE:how to handle the number size limit?
+	{
+		alphabet[i++] = B->buff[++B->fwdPointer];	
+		//++B->fwdPointer; //included inline above
+	}
+
+	//keep moving pointer ahead of numbers, till we reach . or some another character (error)
+	if(B->buff[B->fwdPointer] == '.')
+	{	
+		if(B->buff[(B->fwdPointer)+1] >='0' && B->buff[(B->fwdPointer)+1] <='9') //+1 to ptr to peek ahead and see if nos ahead, append the . if true
+		{
+			alphabet[i++] = B->buff[++B->fwdPointer];
+		}
+				
+		int maxDecimalPlace=2; int currentDecimalPlace=0;
+		while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE && currentDecimalPlace < maxDecimalPlace)  //UPDATE:how to handle the number size limit?
+		{
+			alphabet[i++] = B->buff[++B->fwdPointer];	
+			++currentDecimalPlace;
+		}
+		if(currentDecimalPlace==2) //  B->buff[B->fwdPointer] == '.')
+		{	//it is obv upto maxDecimalPlace only by code design
+			numToken->token_name = "RNUM";
+			numToken->token_value = alphabet; //CONSIDER:this will need atof conversion later.
+
+		}
+		//CONSIDER:clean this commented mess up.
+		// else if(currentDecimalPlace ==0) //non numeric char after '.'
+		// {	
+			
+		// 	//alphabet contains the number before period '.', fwdPointer is at '.' currently
+		// 	numToken->token_value = alphabet; //this will need atoi conversion later.
+		// 	numToken->token_name = "NUM";
+		// 	free(alphabet);
+		// 	return numToken;
+		// }
+		else //currentDecimalPlace bw [0,2)
+		{	//eg 24.5 is invalid, need 24.50 
+			showError();
+			free(numToken);
+			free(alphabet);
+			return NULL;
+		}
+	}
+	else
+	{	//non numeric and non-period character found, return token
+		numToken->token_value = alphabet; //this will need atoi conversion later.
+		numToken->token_name = "NUM";
+		free(alphabet);
+		return numToken;	//CONSIDER: the fwdPointer has increasd. handle that?
+	}
+
 
 }
 
@@ -537,7 +631,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		tokenInfo token = malloc(sizeof(tokenInfo));
 		token->charNumber = B->curPointer;
 		token->token_name = ID;
-		tokenInfo idToken = getIDToken(B);
+		tokenInfo idToken = getIDToken(B); //!MODIFY! , need i value passed.
 		token->token_value = idToken->token_value;
 		free(idToken);
 		return token;
@@ -549,7 +643,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		tokenInfo token = malloc(sizeof(tokenInfo));
 		token->charNumber = B->curPointer;
 		tokenInfo numToken = getNumberToken(B);
-		token->token_name = numToken->token_name;
+		token->token_name = numToken->token_name; //whether RealNum or IntNum.
 		token->token_value = numToken->token_value;
 		free(numToken);
 		return token;
