@@ -146,9 +146,60 @@ tokenInfo getIDToken(buffer B, int i)
 	}
 }
 
+tokenInfo getStringToken(buffer B, int i)
+{
+	// Find the string text.
+	if(i == 0)
+	{
+		showError();
+		return NULL;
+	}
+	tokenInfo stringToken = malloc(sizeof(tokenInfo));
+	char* alphabet = malloc(i*sizeof(char));
+	alphabet[0] = B->buff[B->fwdPointer];
+	if(alphabet[0] < 'a' || alphabet[0] > 'z')
+	{
+		// Not an alphabet. End here.
+		free(stringToken);
+		free(alphabet);
+		return NULL;
+	}
+	else
+	{
+		// It is an alphabet. Keep going on.
+		++B->fwdPointer;
+		tokenInfo nextToken = getFunctionToken(B, --i);
+		if(nextToken == NULL)
+		{
+			stringToken->token_value = alphabet;
+			free(nextToken);
+			free(alphabet);
+			return stringToken;
+		}
+		else
+		{
+			stringToken->token_value = joinStrings(alphabet,nextToken->token_value);
+			free(nextToken);
+			free(alphabet);
+			return stringToken;
+		}
+	}
+}
+
 tokenInfo getNumberToken(buffer B)
 {
 
+}
+
+tokenInfo makeSingleToken(buffer B)
+{
+	// Creates a token for a single character and returns it. Reduces a lot of repititive work.
+	tokenInfo token = malloc(sizeof(tokenInfo));
+	token->charNumber = B->curPointer;
+	//Increment values of curPointer and fwdPointer;
+	++B->curPointer;
+	++B->fwdPointer;
+	return token;
 }
 
 tokenInfo getNextToken(FILE *fp, buffer B)
@@ -157,116 +208,70 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	int state = -1; // Stores the current state of the the scan.
 	char alphabet = B->buff[B->fwdPointer];
 	// Check first for the one character tokens.
-	// TODO : implement strings.
-	// Implement matrix type. Change the SQO check.
 	if(a == '(')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = OP;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == ')')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
-		token->token_name = CL;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
+		tokenInfo token = makeSingleToken(B);
+		token->token_name = CP;
 		return token;
 	}
 	else if(a == '[')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQO;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == ']')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQC;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == ';')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = SEMICOLON;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == ',')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = COMMA;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == '+')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = PLUS;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == '-')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = MINUS;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == '*')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = MUL;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == '/')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = DIV;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	else if(a == '@')
 	{
-		tokenInfo token = malloc(sizeof(tokenInfo));
+		tokenInfo token = makeSingleToken(B);
 		token->token_name = SIZE;
-		token->charNumber = B->curPointer;
-		//Increment values of curPointer and fwdPointer;
-		++B->curPointer;
-		++B->fwdPointer;
 		return token;
 	}
 	// Check for comments token and safely ignore
@@ -314,12 +319,14 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			{
 				token->token_name = GE;
 				B->curPointer = B->fwdPointer;
+				free(nextToken);
 				return token;
 			}
 			else
 			{
 				token->token_name = LE;
 				B->curPointer = B->fwdPointer;
+				free(nextToken);
 				return token;
 			}
 		}
@@ -333,6 +340,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				// Lost the next token. Need to generate that one again.
 				B->curPointer = token->charNumber + 1;
 				B->fwdPointer = B->curPointer;
+				free(nextToken);
 				return token;
 			}
 			else(a == '<')
@@ -341,6 +349,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				// Lost the next token. Need to generate that one again.
 				B->curPointer = token->charNumber + 1;
 				B->fwdPointer = B->curPointer;
+				free(nextToken);
 				return token;
 			}
 		}
@@ -355,6 +364,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// EQ token.
 			token->token_name = EQ;
+			free(nextToken);
 			return token;
 		}
 		else if(nextToken->token_name == DIV)
@@ -366,6 +376,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				token->token_name = NE;
 				++B->fwdPointer;
 				++B->curPointer;
+				free(nextToken);
 				return token;
 			}
 			else
@@ -375,6 +386,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				showError();
 				++B->fwdPointer;
 				++B->curPointer;
+				free(nextToken);
+				free(token);
 				return NULL;
 			}
 		}
@@ -385,6 +398,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			// Lost the next token. Need to generate again.
 			B->curPointer = ++token->charNumber;
 			B->fwdPointer = B->curPointer;
+			free(nextToken);
 			return token;
 		}
 	}
@@ -408,6 +422,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					// Increment current and fwd pointer.
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
 					return token;
 				}
 				else
@@ -416,6 +431,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					showError();
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
+					free(token);
 					return NULL;
 				}
 			}
@@ -428,6 +445,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					token->token_name = OR;
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
 					return token;
 				}
 				else{
@@ -435,6 +453,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					showError();
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
+					free(token);
 					return NULL;
 				}
 			}
@@ -447,6 +467,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					token->token_name = NOT;
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
 					return token;
 				}
 				else{
@@ -454,6 +475,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 					showError();
 					++B->fwdPointer;
 					++B->curPointer;
+					free(nextToken);
+					free(token);
 					return NULL;
 				}
 			}
@@ -463,6 +486,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				showError();
 				B->curPointer = ++token->charNumber;
 				B->fwdPointer = B->curPointer;
+				free(nextToken);
+				free(token);
 				return NULL;
 			}
 		}
@@ -472,6 +497,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			showError();
 			B->curPointer = ++token->charNumber;
 			B->fwdPointer = B->curPointer;
+			free(nextToken);
+			free(token);
 			return NULL;
 		}
 	}
@@ -482,12 +509,15 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		tokenInfo token = malloc(sizeof(tokenInfo));
 		token->charNumber = B->curPointer;
 		token->token_name = FUNID;
+		char* funvalue = malloc((1+FUNSIZE)*sizeof(char));
+		funvalue[0] = '_';
 		if((B->buff[B->fwdPointer] >= 'a' && B->buff[B->fwdPointer] <= 'z') || (B->buff[B->fwdPointer] >= 'A' && B->buff[B->fwdPointer] <= 'Z'))
 		{
 			// Check for the function token.
 			tokenInfo funToken = getFunctionToken(B, FUNSIZE);
-			token->token_value = funToken->token_value;
+			token->token_value = joinStrings(funvalue,funToken->token_value);
 			B->curPointer = B->fwdPointer;
+			free(funvalue);
 			return token;
 		}
 		else
@@ -495,6 +525,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			// Incorrect. Show error.
 			showError();
 			B->curPointer = B->fwdPointer;
+			free(funvalue);
+			free(token);
 			return NULL;
 		}
 	}
@@ -507,6 +539,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		token->token_name = ID;
 		tokenInfo idToken = getIDToken(B);
 		token->token_value = idToken->token_value;
+		free(idToken);
 		return token;
 	}
 	else if(a >= '0' && a<= '9')
@@ -518,6 +551,19 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		tokenInfo numToken = getNumberToken(B);
 		token->token_name = numToken->token_name;
 		token->token_value = numToken->token_value;
+		free(numToken);
+		return token;
+	}
+	else if(a == '\"')
+	{
+		// String type.
+		++B->fwdPointer;
+		tokenInfo token = malloc(sizeof(tokenInfo));
+		token->charNumber = B->curPointer;
+		token->token_name = STRING;
+		tokenInfo stringToken = getStringToken(B, IDSIZE);
+		token->token_value = stringToken->token_value;
+		free(stringToken);
 		return token;
 	}
 }
