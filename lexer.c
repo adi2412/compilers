@@ -254,7 +254,8 @@ tokenInfo getNumberToken(buffer B)
 		{	//it is obv upto maxDecimalPlace only by code design
 			numToken->token_name = "RNUM";
 			numToken->token_value = alphabet; //CONSIDER:this will need atof conversion later.
-
+			free(alphabet);
+			return numToken;
 		}
 		//CONSIDER:clean this commented mess up.
 		// else if(currentDecimalPlace ==0) //non numeric char after '.'
