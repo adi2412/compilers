@@ -58,40 +58,92 @@ char* joinStrings(char* alp, char* str)
 	return alp;
 }
 
-tokenInfo getFunctionToken(buffer B)
+tokenInfo getFunctionToken(buffer B, int i)
 {
 	// Find the function token. This might be incorrect
-	// TODO: add a counter parameter to check for limit in size of name.
+	if(i==0)
+	{
+		// Name length exceeded
+		showError();
+		return NULL;
+	}
 	tokenInfo funToken = malloc(sizeof(tokenInfo));
-	char* alphabet = malloc(FUNSIZE*sizeof(char));
+	char* alphabet = malloc(i*sizeof(char));
 	alphabet[0] = B->buff[B->fwdPointer];
-	if(alphabet < 'a' || alphabet > 'z')
+	if((alphabet[0] < 'a' || alphabet[0] > 'z') && (alphabet[0] < 'A' || alphabet[0] > 'Z') && (alphabet[0] < '0' || alphabet[0] > '9'))
 	{
 		// Function name ended on previous token.
+		free(funToken);
+		free(alphabet);
 		return NULL;
 	}
 	else
 	{
 		// It is an alphabet. Keep checking further.
 		++B->fwdPointer;
-		tokenInfo nextToken = getFunctionToken(B);
+		tokenInfo nextToken = getFunctionToken(B, --i);
 		if(nextToken == NULL)
 		{
 			funToken->token_value = alphabet;
+			free(nextToken);
+			free(alphabet);
 			return funToken;
 		}
 		else
 		{
-			// This is incorrect for sure.
 			funToken->token_value = joinStrings(alphabet,nextToken->token_value);
+			free(nextToken);
+			free(alphabet);
 			return funToken;
 		}
 	}
 }
 
-tokenInfo getIDToken(buffer B)
+tokenInfo getIDToken(buffer B, int i)
 {
-
+	// Find the identifier token. Return even if it is a keyword as an identifier
+	if(i == 0)
+	{
+		showError();
+		return NULL;
+	}
+	tokenInfo idToken = malloc(sizeof(tokenInfo));
+	char* alphabet = malloc(i*sizeof(char));
+	alphabet[0] = B->buff[B->fwdPointer];
+	if((alphabet[0] < 'a' || alphabet[0] > 'z') && (alphabet[0] < 'A' || alphabet[0] > 'Z') && (alphabet[0] < '0' || alphabet[0] > '9'))
+	{
+		// Function name ended on previous token.
+		free(idToken);
+		free(alphabet);
+		return NULL;
+	}
+	else
+	{
+		// It is an alphabet. Keep checking further.
+		++B->fwdPointer;
+		if(alphabet[0] >= '0' && alphbet[0] <= '9')
+		{
+			// Last letter of the alphabet. Return it right now.
+			idToken->token_value = alphabet;
+			free(alphabet);
+			return idToken;
+		}
+		tokenInfo nextToken = getIDToken(B, --i);
+		if(nextToken == NULL)
+		{
+			idToken->token_value = alphabet;
+			free(nextToken);
+			free(alphabet);
+			return idToken;
+		}
+		else
+		{
+			idToken->token_value = joinStrings(alphabet,nextToken->token_value);
+			free(nextToken);
+			free(alphabet);
+			return idToken;
+		}
+	}
 }
 
 tokenInfo getNumberToken(buffer B)
@@ -105,6 +157,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	int state = -1; // Stores the current state of the the scan.
 	char alphabet = B->buff[B->fwdPointer];
 	// Check first for the one character tokens.
+	// TODO : implement strings.
+	// Implement matrix type. Change the SQO check.
 	if(a == '(')
 	{
 		tokenInfo token = malloc(sizeof(tokenInfo));
@@ -431,7 +485,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		if((B->buff[B->fwdPointer] >= 'a' && B->buff[B->fwdPointer] <= 'z') || (B->buff[B->fwdPointer] >= 'A' && B->buff[B->fwdPointer] <= 'Z'))
 		{
 			// Check for the function token.
-			tokenInfo funToken = getFunctionToken(B);
+			tokenInfo funToken = getFunctionToken(B, FUNSIZE);
 			token->token_value = funToken->token_value;
 			B->curPointer = B->fwdPointer;
 			return token;
@@ -444,7 +498,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			return NULL;
 		}
 	}
-	else if(a >= 'a' && a<= 'z')
+	else if((a >= 'a' && a<= 'z') || (a >= 'A' && a<= 'Z'))
 	{
 		// An alphabet identifier
 		++B->fwdPointer;
