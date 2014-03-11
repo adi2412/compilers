@@ -1,10 +1,10 @@
 # temporary make file. will be improved
 
 lexer:
-	gcc lexer.c
+	gcc -o lexer lexer.c
 
 parser:
-	gcc parser.c
+	gcc -o parser parser.c lexer.c
 
 driver:
-	gcc driver.c
+	gcc -o compiler driver.c parser.c lexer.c

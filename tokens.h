@@ -53,15 +53,18 @@ typedef enum tokens{
 // Types of attributes of a token, like its scoping in case of variables 
 // or parameters for a function
 */
+typedef struct _attributes attributes;
 
-typedef struct _attributes
+struct _attributes
 {
 	char* attr_name;
 	char* attr_value;
 	attributes *nextAttribute;
-} attributes;
+};
 
-typedef struct _tokenInfo
+typedef struct _tokenInfo *tokenInfo;
+
+struct _tokenInfo
 {
 	token token_name;
 	char* token_value;	// The actual name of the token. For eg, abc is the value of a token ID
@@ -70,4 +73,4 @@ typedef struct _tokenInfo
 	int lineNumber;
 	int charNumber;
 	/* data */
-} *tokenInfo;
+};
