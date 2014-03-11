@@ -22,7 +22,8 @@
 
 typedef int buffersize;
 
-typedef struct _buffer *buffer;
+typedef struct _buffer buffStruct;
+typedef buffStruct *buffer;
 
 // Buffer structure
 struct _buffer
@@ -48,12 +49,18 @@ void showError()
 FILE *getStream(FILE *fp, buffer B, buffersize k)
 {
 	// calls the fgets function.
-	fgets(B->buff, k, fp);
+	if(fgets(B->buff, k, fp) == NULL)
+	{
+		// No more lines found.
+		free(B);
+		free(B->nextBuffer);
+		return NULL;
+	}
 	// set the character number to the value from the previous buffer
-	B->charNumber = B->nextBuffer->charNumber;
-	B->lineNumber = B->nextBuffer->lineNumber;
 	B->nextBuffer->curPointer = 0;
 	B->nextBuffer->fwdPointer = 0;
+	B->charNumber = B->nextBuffer->charNumber;
+	B->lineNumber = B->nextBuffer->lineNumber;
 	return fp;
 	// and we're done :/
 }
@@ -74,6 +81,10 @@ tokenInfo getEndCommentAndNextToken(FILE *fp, buffer B)
 		++B->lineNumber;
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Keep checking for how long comments go and return next token.
 		return getNextToken(fp, B);
@@ -83,6 +94,10 @@ tokenInfo getEndCommentAndNextToken(FILE *fp, buffer B)
 		// The comment has overflowed to next buffer. Finish reading comment and return the next token.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Keep checking for how long comments go and return next token.
 		return getEndCommentAndNextToken(fp, B);
@@ -100,6 +115,7 @@ char* joinStrings(char* alp, char* str)
 	{
 		alp[i] = str[i-1];
 	}
+	printf("%s",alp);
 	return alp;
 }
 
@@ -112,14 +128,18 @@ tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 		showError();
 		return NULL;
 	}
-	tokenInfo funToken = (tokenInfo)malloc(sizeof(tokenInfo));
-	char* alphabet = (char*)malloc(i*sizeof(char));
+	tokenInfo funToken = malloc(sizeof(tokenStruct));
+	char* alphabet = malloc(sizeof(char));
 	// Check if the buffer has enough space. Else change the buffer.
 	if(B->fwdPointer >= BUFFERSIZE)
 	{
 		// Change buffers.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Return next token from the next buffer.
 		return getFunctionToken(fp, B, i);
@@ -162,7 +182,7 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 		showError();
 		return NULL;
 	}
-	tokenInfo idToken = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo idToken = malloc(sizeof(tokenStruct));
 	char* alphabet = (char*)malloc(i*sizeof(char));
 	// Check if the buffer has enough space. Else change the buffer.
 	if(B->fwdPointer >= BUFFERSIZE)
@@ -170,6 +190,10 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 		// Change buffers.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Return next token from the next buffer.
 		return getIDToken(fp, B, i);
@@ -219,7 +243,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 		showError();
 		return NULL;
 	}
-	tokenInfo stringToken = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo stringToken = malloc(sizeof(tokenStruct));
 	char* alphabet = (char*)malloc(i*sizeof(char));
 	// Check if the buffer has enough space. Else change the buffer.
 	if(B->fwdPointer >= BUFFERSIZE)
@@ -227,6 +251,10 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 		// Change buffers.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Return next token from the next buffer.
 		return getStringToken(fp, B, i);
@@ -264,7 +292,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 tokenInfo getNumberToken(FILE *fp, buffer B)
 {	
 	//integers, and real number upto 2 decimal places supported
-	tokenInfo numToken = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo numToken = malloc(sizeof(tokenStruct));
 	char* alphabet = (char*)malloc(NUMSIZE*sizeof(char));
 	int i=0;
 	// Check if the buffer has enough space. Else change the buffer.
@@ -273,6 +301,10 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		// Change buffers.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Return next token from the next buffer.
 		return getNumberToken(fp, B);
@@ -282,7 +314,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 
 	while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE)  //UPDATE:how to handle the number size limit?
 	{
-		alphabet[i++] = B->buff[++B->fwdPointer];	
+		alphabet[i++] = B->buff[B->fwdPointer++];	
 		//++B->fwdPointer; //included inline above
 	}
 
@@ -291,20 +323,21 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 	{	
 		if(B->buff[(B->fwdPointer)+1] >='0' && B->buff[(B->fwdPointer)+1] <='9') //+1 to ptr to peek ahead and see if nos ahead, append the . if true
 		{
-			alphabet[i++] = B->buff[++B->fwdPointer];
+			alphabet[i++] = B->buff[B->fwdPointer++];
 		}
 				
 		int maxDecimalPlace=2; int currentDecimalPlace=0;
 		while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE && currentDecimalPlace < maxDecimalPlace)  //UPDATE:how to handle the number size limit?
 		{
-			alphabet[i++] = B->buff[++B->fwdPointer];	
+			alphabet[i++] = B->buff[B->fwdPointer++];	
 			++currentDecimalPlace;
 		}
 		if(currentDecimalPlace==2) //  B->buff[B->fwdPointer] == '.')
 		{	//it is obv upto maxDecimalPlace only by code design
 			numToken->token_name = RNUM;
 			numToken->token_value = alphabet; //CONSIDER:this will need atof conversion later.
-
+			free(alphabet);
+			return numToken;
 		}
 		//CONSIDER:clean this commented mess up.
 		// else if(currentDecimalPlace ==0) //non numeric char after '.'
@@ -336,7 +369,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 
 tokenInfo createKeywordToken(token token_name)
 {
-	tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo token = malloc(sizeof(tokenStruct));
 	token->token_name = token_name;
 	return token;
 }
@@ -344,9 +377,11 @@ tokenInfo createKeywordToken(token token_name)
 tokenInfo checkForKeyword(char* name)
 {
 	// Check if it is a keyword.
-	if(strcmp(name,"main") && strcmp(name,"string") && strcmp(name,"end") && strcmp(name,"int") && strcmp(name,"real") && strcmp(name,"matrix") && strcmp(name,"if") && strcmp(name,"else") && strcmp(name,"endif") && strcmp(name,"read") && strcmp(name,"print"))
+	// Add function as a keyword.
+	if(strcmp(name,"main") && strcmp(name,"string") && strcmp(name,"end") && strcmp(name,"int") && strcmp(name,"real") && strcmp(name,"matrix") && strcmp(name,"if") && strcmp(name,"else") && strcmp(name,"endif") && strcmp(name,"read") && strcmp(name,"print") && strcmp(name,"function"))
 	{
 		// It is not a keyword. Return NULL.
+		printf("not a keyword");
 		return NULL;
 	}
 	else
@@ -397,6 +432,11 @@ tokenInfo checkForKeyword(char* name)
 		{
 			return createKeywordToken(PRINT);
 		}
+		else if(!strcmp(name,"function"))
+		{
+			printf("worked");
+			return createKeywordToken(FUNCTION);
+		}
 	}
 	return NULL;
 }
@@ -404,7 +444,7 @@ tokenInfo checkForKeyword(char* name)
 tokenInfo makeSingleToken(buffer B)
 {
 	// Creates a token for a single character and returns it. Reduces a lot of repititive work.
-	tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo token = malloc(sizeof(tokenStruct));
 	token->charNumber = B->charNumber;
 	token->lineNumber = B->lineNumber;
 	//Increment values of curPointer and fwdPointer;
@@ -423,6 +463,10 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		// Change buffers.
 		getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
+		if(B->nextBuffer == NULL)
+		{
+			return NULL;
+		}
 		B = B->nextBuffer;
 		// Return next token from the next buffer.
 		return getNextToken(fp, B);
@@ -511,6 +555,10 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			++B->lineNumber;
 			getStream(fp, B->nextBuffer, BUFFERSIZE);
 			// Set current buffer to next buffer
+			if(B->nextBuffer == NULL)
+			{
+				return NULL;
+			}
 			B = B->nextBuffer;
 			// Keep checking for how long comments go and return next token.
 			return getNextToken(fp, B);
@@ -521,6 +569,10 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			// The comment has overflowed to next buffer. Finish reading comment and return the next token.
 			getStream(fp, B->nextBuffer, BUFFERSIZE);
 			// Set current buffer to next buffer
+			if(B->nextBuffer == NULL)
+			{
+				return NULL;
+			}
 			B = B->nextBuffer;
 			// Keep checking for how long comments go and return next token.
 			return getEndCommentAndNextToken(fp, B);
@@ -530,7 +582,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// Check next token.
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		int curPointer = B->curPointer; // Store the current value temporarily.
@@ -584,7 +636,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	else if(a == '=')
 	{
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		int curPointer = B->curPointer; // Temporary store.
@@ -639,7 +691,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// One of the logical operators, possibly
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		int curPointer = B->curPointer;
@@ -749,7 +801,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// A function identifier
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		token->token_name = FUNID;
@@ -760,11 +812,30 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			// Check for the function token.
 			tokenInfo funToken = getFunctionToken(fp, B, FUNSIZE);
 			// No need to store the underscore of the function name.
-			token->token_value = funToken->token_value;
-			B->curPointer = B->fwdPointer;
-			B->charNumber = B->fwdPointer;
-			free(funvalue);
-			return token;
+			tokenInfo keywordToken = checkForKeyword(funToken->token_value);
+			if(keywordToken != NULL)
+			{
+				// It is a keyword token. Return as keyword.
+				free(token);
+				token = keywordToken;
+				token->charNumber = B->charNumber;
+				B->curPointer = B->fwdPointer;
+				B->charNumber = B->fwdPointer;
+				free(keywordToken);
+				free(funToken);
+				return token;
+			}
+			else
+			{
+				// It is an identifier. Return the identifier itself.
+				token->token_value = funToken->token_value;
+				B->curPointer = B->fwdPointer;
+				B->charNumber = B->fwdPointer;
+				free(funvalue);
+				free(funToken);
+				free(keywordToken);
+				return token;
+			}
 		}
 		else
 		{
@@ -781,7 +852,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// An alphabet identifier
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		token->token_name = ID;
@@ -816,7 +887,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// A number identifier
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		char* numvalue = (char*)malloc((1+NUMSIZE)*sizeof(char));
@@ -832,7 +903,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		// String type.
 		++B->fwdPointer;
-		tokenInfo token = (tokenInfo)malloc(sizeof(tokenInfo));
+		tokenInfo token = malloc(sizeof(tokenStruct));
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		token->token_name = STR;
@@ -867,10 +938,21 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			// New line. Change values of line number and char number
 			++B->lineNumber;
 			B->charNumber = 0;
+			// Change the buffer.
+			getStream(fp, B->nextBuffer, BUFFERSIZE);
+			// Set current buffer to next buffer
+			if(B->nextBuffer == NULL)
+			{
+				return NULL;
+			}
+			B = B->nextBuffer;
 			return getNextToken(fp, B);
 		}
 		else if(a == ' ')
 		{
+			++B->fwdPointer;
+			B->curPointer = B->fwdPointer;
+			++B->charNumber;
 			return getNextToken(fp, B);
 		}
 		else if(a == EOF)
@@ -896,7 +978,7 @@ tokenInfo lexer(FILE *fp)
 {
 	FILE *source = fp;
 	// Initialise tokenInfo
-	tokenInfo tokens = (tokenInfo)malloc(sizeof(tokenInfo));
+	tokenInfo tokens = malloc(sizeof(tokenStruct));
 	tokens->nextToken = NULL;
 	tokenInfo head = tokens;	//Points to head token
 	buffer firstBuff = (buffer)malloc(sizeof(buffer));
@@ -929,12 +1011,14 @@ tokenInfo lexer(FILE *fp)
 			{
 				// The first buffer was current. Use the second.
 				getStream(fp, secondBuff, BUFFERSIZE);
+				// Do something about null being return by getStream.
 				curBuff = secondBuff;
 			}
 			else
 			{
 				// The second buffer was current.
 				getStream(fp, firstBuff, BUFFERSIZE);
+				// Do something about null being returned by getStream.
 				curBuff = firstBuff;
 			}
 		}
@@ -943,7 +1027,7 @@ tokenInfo lexer(FILE *fp)
 			// correct token returned!
 			tokens->lineNumber = curBuff->lineNumber;
 			// Initialize the next token in the linked list.
-			tokens->nextToken = (tokenInfo)malloc(sizeof(tokenInfo));
+			tokens->nextToken = malloc(sizeof(tokenStruct));
 			// Set value of charNumber to current position of pointer
 			//charNumber = curBuff->curPointer;
 			// Set tokens to point to next tokens.
@@ -954,26 +1038,77 @@ tokenInfo lexer(FILE *fp)
 	return NULL;
 }
 
+char* getTokenName(token name)
+{
+	switch(name)
+	{
+		case MAIN: return "Main"; break;
+		case FUNID: return "FUNID"; break;
+		case SEMICOLON: return "SEMICOLON"; break;
+		case STRING: return "STRING"; break;
+		case STR: return "STR"; break;
+		case INT: return "INT"; break;
+		case ASSIGNOP: return "ASSIGNOP";
+		case COMMENT: return "COMMENT";
+		case ID: return "ID";
+		case NUM: return "NUM";
+		case RNUM: return "RNUM";
+		case END: return "END";
+		case REAL: return "REAL";
+		case MATRIX: return "MATRIX";
+		case SQO: return "SQO";
+		case SQC: return "SQC";
+		case OP: return "OP";
+		case CL: return "CL";
+		case PLUS: return "PLUS";
+		case MINUS: return "MINUS";
+		case MUL: return "MUL";
+		case DIV: return "DIV";
+		case COMMA: return "COMMA";
+		case SIZE: return "SIZE";
+		case IF: return "IF";
+		case ELSE: return "ELSE";
+		case ENDIF: return "ENDIF";
+		case READ: return "READ";
+		case PRINT: return "PRINT";
+		case AND: return "AND";
+		case OR: return "OR";
+		case NOT: return "NOT";
+		case LT: return "LT";
+		case LE: return "LE";
+		case GT: return "GT";
+		case GE: return "GE";
+		case NE: return "NE";
+		case EQ: return "EQ";
+		case FUNCTION: return "FUNCTION";
+		default: return "Kuch aur"; break;
+	}
+}
+
 int main()
 {
 	FILE *source;
 	source = fopen("test.txt","r");
 	tokenInfo tokens;
-	buffer firstBuff = (buffer)malloc(sizeof(buffer));
-	// Initialise the first buffer stream
-	getStream(source, firstBuff, BUFFERSIZE);
+	buffer firstBuff = malloc(sizeof(buffStruct));	
 	firstBuff->curPointer = 0;
 	firstBuff->fwdPointer = 0;
 	firstBuff->charNumber = 1;
 	firstBuff->lineNumber = 1;
 	buffer curBuff = firstBuff; // Current buffer being used.
-	buffer secondBuff = (buffer)malloc(sizeof(buffer));
+	buffer secondBuff = malloc(sizeof(buffStruct));
 	secondBuff->curPointer = 0;
 	secondBuff->fwdPointer = 0;
 	secondBuff->charNumber = 1;
 	secondBuff->lineNumber = 1;
 	firstBuff->nextBuffer = secondBuff;
 	secondBuff->nextBuffer = firstBuff;
+	// Initialise the first buffer stream
+	getStream(source, firstBuff, BUFFERSIZE);
+	if(firstBuff->nextBuffer == NULL)
+	{
+		return 0;
+	}
 	while(curBuff->buff[firstBuff->curPointer] != EOF)
 	{
 		tokens = getNextToken(source, curBuff);
@@ -984,8 +1119,10 @@ int main()
 		}
 		else
 		{
-			tokens->nextToken = (tokenInfo)malloc(sizeof(tokenInfo));
-			printf("%s\n",tokens->token_value);
+			tokens->nextToken = malloc(sizeof(tokenStruct));
+			printf("%s\n",getTokenName(tokens->token_name));
+			if(tokens->token_name == ID)
+				printf("%s\n",tokens->token_value);
 			tokens = tokens->nextToken;
 			tokens->nextToken = NULL;
 		}

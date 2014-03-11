@@ -46,7 +46,8 @@ typedef enum tokens{
 	EQ,
 	GT,
 	GE,
-	NE
+	NE,
+	FUNCTION
 } token;
 
 /*
@@ -62,7 +63,8 @@ struct _attributes
 	attributes *nextAttribute;
 };
 
-typedef struct _tokenInfo *tokenInfo;
+typedef struct _tokenInfo tokenStruct;
+typedef tokenStruct *tokenInfo;
 
 struct _tokenInfo
 {
