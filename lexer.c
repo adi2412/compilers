@@ -36,6 +36,8 @@ struct _buffer
 	buffer nextBuffer;
 };
 
+buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
+
 tokenInfo getNextToken(FILE *fp, buffer B);
 /*
 // Shows all the different errors.
@@ -56,11 +58,13 @@ FILE *getStream(FILE *fp, buffer B, buffersize k)
 		free(B->nextBuffer);
 		return NULL;
 	}
+	//printf("%p, --> %p",B, B->nextBuffer);
 	// set the character number to the value from the previous buffer
 	B->nextBuffer->curPointer = 0;
 	B->nextBuffer->fwdPointer = 0;
 	B->charNumber = B->nextBuffer->charNumber;
 	B->lineNumber = B->nextBuffer->lineNumber;
+	curBuff = B;
 	return fp;
 	// and we're done :/
 }
@@ -115,7 +119,7 @@ char* joinStrings(char* alp, char* str)
 	{
 		alp[i] = str[i-1];
 	}
-	printf("%s",alp);
+	alp[i] = '\0';
 	return alp;
 }
 
@@ -129,7 +133,7 @@ tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 		return NULL;
 	}
 	tokenInfo funToken = malloc(sizeof(tokenStruct));
-	char* alphabet = malloc(sizeof(char));
+	char* alphabet = malloc(i*sizeof(char));
 	// Check if the buffer has enough space. Else change the buffer.
 	if(B->fwdPointer >= BUFFERSIZE)
 	{
@@ -271,7 +275,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 	{
 		// It is an alphabet(or a space). Keep going on.
 		++B->fwdPointer;
-		tokenInfo nextToken = getFunctionToken(fp, B, --i);
+		tokenInfo nextToken = getStringToken(fp, B, --i);
 		if(nextToken == NULL)
 		{
 			stringToken->token_value = alphabet;
@@ -282,6 +286,8 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 		else
 		{
 			stringToken->token_value = joinStrings(alphabet,nextToken->token_value);
+			//printf("%s",stringToken->token_value);
+			//printf("%c",alphabet[0]);
 			free(nextToken);
 			free(alphabet);
 			return stringToken;
@@ -381,7 +387,6 @@ tokenInfo checkForKeyword(char* name)
 	if(strcmp(name,"main") && strcmp(name,"string") && strcmp(name,"end") && strcmp(name,"int") && strcmp(name,"real") && strcmp(name,"matrix") && strcmp(name,"if") && strcmp(name,"else") && strcmp(name,"endif") && strcmp(name,"read") && strcmp(name,"print") && strcmp(name,"function"))
 	{
 		// It is not a keyword. Return NULL.
-		printf("not a keyword");
 		return NULL;
 	}
 	else
@@ -434,7 +439,6 @@ tokenInfo checkForKeyword(char* name)
 		}
 		else if(!strcmp(name,"function"))
 		{
-			printf("worked");
 			return createKeywordToken(FUNCTION);
 		}
 	}
@@ -811,6 +815,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// Check for the function token.
 			tokenInfo funToken = getFunctionToken(fp, B, FUNSIZE);
+			strcpy(funvalue,funToken->token_value);
 			// No need to store the underscore of the function name.
 			tokenInfo keywordToken = checkForKeyword(funToken->token_value);
 			if(keywordToken != NULL)
@@ -819,21 +824,21 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				free(token);
 				token = keywordToken;
 				token->charNumber = B->charNumber;
+				token->lineNumber = B->lineNumber;
 				B->curPointer = B->fwdPointer;
 				B->charNumber = B->fwdPointer;
-				free(keywordToken);
+				free(funvalue);
+				//free(keywordToken);
 				free(funToken);
 				return token;
 			}
 			else
 			{
 				// It is an identifier. Return the identifier itself.
-				token->token_value = funToken->token_value;
+				token->token_value = funvalue;
 				B->curPointer = B->fwdPointer;
 				B->charNumber = B->fwdPointer;
-				free(funvalue);
 				free(funToken);
-				free(keywordToken);
 				return token;
 			}
 		}
@@ -859,6 +864,18 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		char* idvalue = (char*)malloc((1+IDSIZE)*sizeof(char));
 		tokenInfo idToken = getIDToken(fp, B, IDSIZE);
 		// Check if it is a token
+		idvalue[0] = a;
+		if(idToken == NULL)
+		{
+			// Check for one alphabet identifier only.
+			token->token_value = idvalue;
+			B->curPointer = B->fwdPointer;
+			B->charNumber = B->fwdPointer;
+			free(idToken);
+			return token;
+		}
+		idvalue = joinStrings(idvalue,idToken->token_value);	
+		idToken->token_value = idvalue;
 		tokenInfo keywordToken = checkForKeyword(idToken->token_value);
 		if(keywordToken != NULL)
 		{
@@ -866,16 +883,18 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			free(token);
 			token = keywordToken;
 			token->charNumber = B->charNumber;
+			token->lineNumber = B->lineNumber;
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
-			free(keywordToken);
+			//free(keywordToken);
 			free(idToken);
 			return token;
 		}
 		else
 		{
 			// It is an identifier. Return the identifier itself.
-			token->token_value = joinStrings(idvalue,idToken->token_value);
+			token->token_value = idvalue;
+			//printf("%s",token->token_value);
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
 			free(keywordToken);
@@ -907,12 +926,16 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		token->charNumber = B->charNumber;
 		token->lineNumber = B->lineNumber;
 		token->token_name = STR;
+		char* stringValue = (char*)malloc((IDSIZE)*sizeof(char));
 		tokenInfo stringToken = getStringToken(fp, B, IDSIZE);
 		// CONSIDER: check if end of string has a '"'
-		if(B->buff[B->fwdPointer] == '\"')
+		if(B->buff[B->fwdPointer] == '"')
 		{
 			// It is a string ending with the '"'
-			token->token_value = stringToken->token_value;
+			strcpy(stringValue,stringToken->token_value);
+			token->token_value = stringValue;
+			++B->fwdPointer;
+			//printf("%s +++ %s",token->token_value,stringToken->token_value);
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
 			free(stringToken);
@@ -927,6 +950,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			B->charNumber = B->fwdPointer;
 			free(stringToken);
 			free(token);
+			free(stringValue);
 			return NULL;
 		}
 	}
@@ -959,6 +983,13 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// End of the input file. Stop here.
 			return NULL;
+		}
+		else if(a == '\t')
+		{
+			++B->fwdPointer;
+			B->curPointer = B->fwdPointer;
+			++B->charNumber;
+			return getNextToken(fp, B);
 		}
 		else
 		{
@@ -1042,12 +1073,12 @@ char* getTokenName(token name)
 {
 	switch(name)
 	{
-		case MAIN: return "Main"; break;
-		case FUNID: return "FUNID"; break;
-		case SEMICOLON: return "SEMICOLON"; break;
-		case STRING: return "STRING"; break;
-		case STR: return "STR"; break;
-		case INT: return "INT"; break;
+		case MAIN: return "MAIN";
+		case FUNID: return "FUNID";
+		case SEMICOLON: return "SEMICOLON";
+		case STRING: return "STRING";
+		case STR: return "STR";
+		case INT: return "INT";
 		case ASSIGNOP: return "ASSIGNOP";
 		case COMMENT: return "COMMENT";
 		case ID: return "ID";
@@ -1095,7 +1126,6 @@ int main()
 	firstBuff->fwdPointer = 0;
 	firstBuff->charNumber = 1;
 	firstBuff->lineNumber = 1;
-	buffer curBuff = firstBuff; // Current buffer being used.
 	buffer secondBuff = malloc(sizeof(buffStruct));
 	secondBuff->curPointer = 0;
 	secondBuff->fwdPointer = 0;
@@ -1103,13 +1133,15 @@ int main()
 	secondBuff->lineNumber = 1;
 	firstBuff->nextBuffer = secondBuff;
 	secondBuff->nextBuffer = firstBuff;
+	int lineNumber = 1;
 	// Initialise the first buffer stream
 	getStream(source, firstBuff, BUFFERSIZE);
+	curBuff = firstBuff; // Current buffer being used.
 	if(firstBuff->nextBuffer == NULL)
 	{
 		return 0;
 	}
-	while(curBuff->buff[firstBuff->curPointer] != EOF)
+	while(curBuff->buff[curBuff->curPointer] != EOF)
 	{
 		tokens = getNextToken(source, curBuff);
 		if(tokens == NULL)
@@ -1120,13 +1152,21 @@ int main()
 		else
 		{
 			tokens->nextToken = malloc(sizeof(tokenStruct));
-			printf("%s\n",getTokenName(tokens->token_name));
-			if(tokens->token_name == ID)
-				printf("%s\n",tokens->token_value);
+			//printf("%p is the address\n", curBuff);
+			if(tokens->lineNumber != lineNumber)
+			{
+				printf("\n");
+				//curBuff->lineNumber = tokens->lineNumber;
+				++lineNumber;
+			}
+			printf("%s ",getTokenName(tokens->token_name));
+			if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+				printf("(%s) ",tokens->token_value);
 			tokens = tokens->nextToken;
 			tokens->nextToken = NULL;
 		}
 	}
+	printf("\n");
 	fclose(source);
 	return 0;
 }
