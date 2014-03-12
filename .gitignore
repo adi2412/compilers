@@ -1,3 +1,5 @@
 lexer
 parser
 test.txt
+*.exe
+*.stackdump
