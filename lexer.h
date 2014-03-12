@@ -5,4 +5,16 @@
 // Second semester 2014
 */
 
-//Contains function prototype declarations of functions in lexer.c
+// Contains function prototype declarations of functions in lexer.c
+
+FILE *getStream(FILE *fp, buffer B, buffersize k);
+tokenInfo getNextToken(FILE *fp);
+tokenInfo	lexer(FILE *fp);
+
+
+
+
+
+
+
+
