@@ -1,0 +1,7 @@
+Exception: STATUS_ACCESS_VIOLATION at eip=6113ACE4
+eax=8006BB94 ebx=0000002F ecx=FFFFFFFF edx=00000053 esi=6118193F edi=0000001B
+ebp=8006B9B0 esp=00289650 program=D:\Data\BBucket\compilerproj\compilers\a.exe, pid 19192, thread main
+cs=0023 ds=002B es=002B fs=0053 gs=002B ss=002B
+Stack trace:
+Frame     Function  Args
+End of stack trace
