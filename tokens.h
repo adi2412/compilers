@@ -47,7 +47,9 @@ typedef enum tokens{
 	GT,
 	GE,
 	NE,
-	FUNCTION
+	FUNCTION,
+	NIL,
+	INVALID
 } token;
 
 /*

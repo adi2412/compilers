@@ -12,29 +12,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include 'lexer.h'	// Might be changed to another header file for the tokens.
+#include "lexer.h"	// Might be changed to another header file for the tokens.
 #include "tokens.h"
 
-#define BUFFERSIZE 1024
 #define FUNSIZE 20 // Don't know the correct value currently UPDATE
 #define IDSIZE 20 //UPDATE
 #define NUMSIZE 20 //UPDATE
-
-typedef int buffersize;
-
-typedef struct _buffer buffStruct;
-typedef buffStruct *buffer;
-
-// Buffer structure
-struct _buffer
-{
-	char buff[BUFFERSIZE];
-	int curPointer;
-	int fwdPointer;
-	int lineNumber;
-	int charNumber;
-	buffer nextBuffer;
-};
 
 buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
 
