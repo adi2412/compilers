@@ -16,107 +16,60 @@
 #include <string.h>
 #define VSIZE 30 
 #define LINESIZE 512
-
+#define EMPTY -1
 typedef enum nonterminals {
 	E,
-	E',
+	Ed,
 	T,
-	T',
+	Td,
 	F
 } nontermsymbol;
 
 typedef enum terminals {
-	+,
-	*,
-	$,
-	(,
-	),
+	PLUS,
+	MUL,
+	DOL,
+	OP,
+	CL,
 	ID
 } termsymbol;
 
-typedef struct _ProductionVar
-{
-	char* pvar_name;
-	int pvar_type;
-	PVar* next;
-} *PVar;
+// typedef struct _ProductionVar
+// {
+// 	char* pvar_name;
+// 	int pvar_type;
+// 	PVar* next;
+// } *PVar;
 
-typedef struct _ProductionRule
-{
-	PV LHS;
-	PV* RHS; //head of list
-} *PRule;
+// typedef struct _ProductionRule
+// {
+// 	PV LHS;
+// 	PV* RHS; //head of list
+// } *PRule;
 
-void parseGrammar(FILE* fGRAMMAR, FILE* fFOLLOW, FILE* fFIRST)
-{
-		int grammarLine = 0;
 
-		//int PT[/*no of non terms*/][/*no of terminals*/];
-		int PT[5][6]; //hardcoded for now
-	
-		while(fGRAMMAR != EOF)
+char* getSet(char* line)
+{	
+	//returns set after semicolon till lineend
+	char* set= (char*)calloc(LINESIZE,sizeof(char));
+	int flag=0; //turns 1 after semicolon found
+	int i,j=0;
+	for(i=0;i<strlen(line);i++)
+	{
+		if(flag)
 		{
-			char *linestream= (char*)malloc(LINESIZE*sizeof(char));
-			if(fgets(linestream,LINESIZE,fGRAMMAR) == NULL) //gets a line from file to linestream
-				break;
-			grammarLine++;
-			char *NT = (char*)malloc(sizeof(char)*VSIZE);
-			char *prod = (char*)malloc(sizeof(char)*VSIZE);
-			// char *firstSet = (char*)malloc(sizeof(char)*LINESIZE);
-			char firstSet[LINESIZE];
-			sscanf(linestream, "%s ; %s", NT, prod ); //string scanf in format
-			//find FIRST (prod), add this rule to each e in the set, to PT[NT,e]
-			firstSet = getFSTFLW(prod, fFIRST); //hope this works.
-			// char search_string[]="Some words here for example";
-  			char *array[50];
-  			int emptyTransfound = 0;
-  			int dollarfound = 0;
-  			if(getWords(firstSet,array) == 1) //success in getting words
-  			{
-			  	int j;
-				for(j=0;j<50;j++)
-			   {
-			      if(array[j]==NULL) 
-			      break; //come out when array ends
-			      //op
-			      PT[NT][array[j]] = grammarLine; //production no
-			      if(array[j] == '?')
-			      	{ emptyTransfound = 1;}
-				}
-  			}
-
-  			if(emptyTransfound)
-  			{	
-  				char followSet[LINESIZE];
-  				followSet = getFSTFLW(prod, fFOLLOW); //hope this works.
-  				char *array[50];
-  				if(getWords(followSet,array) == 1) //success in getting words
-	  			{
-				  	int j;
-					for(j=0;j<50;j++)
-				   {
-				      if(array[j]==NULL) 
-				      break; //come out when array ends
-				      //op
-				      PT[NT][array[j]] = grammarLine; //production no
-				      if(array[j] == '$')
-				      	{ dollarfound = 1;}
-					}
-	  			}
-  			}
-
-  			if(emptyTransfound && dollarfound)
-  			{
-  				PT[NT][$] = grammarLine; //production no
-  			}
-
+			set[j++] = line[i];
 		}
+		if(line[i]==';')
+		{flag=1;}
+	}
+	return set;
 }
-
 
 char* getFSTFLW(char* Term, FILE* ff)
 {
 	char *linestream= (char*)malloc(LINESIZE*sizeof(char));
+	// char linestream[LINESIZE];
 	char *NT = (char*)malloc(sizeof(char)*VSIZE);
 	do
 	{	
@@ -137,23 +90,82 @@ char* getFSTFLW(char* Term, FILE* ff)
 }
 
 
-char* getSet(char* line)
-{	
-	//returns set after semicolon till lineend
-	char* set= (char*)calloc(LINESIZE,sizeof(char));
-	int flag=0; //turns 1 after semicolon found
-	int i,j=0;
-	for(i=0;i<strlen(line);i++)
-	{
-		if(flag)
-		{
-			set[j++] = line[i];
+void parseGrammar(FILE* fGRAMMAR, FILE* fFOLLOW, FILE* fFIRST)
+{
+		int grammarLine = 0;
+
+		//int PT[/*no of non terms*/][/*no of terminals*/];
+		
+		int PT[5][6]; //hardcoded for now
+		int m,n;//init Parse Table
+		for(m=0;m<5;m++){
+			for(n=0;n<6;n++){
+				PT[m][n] = 0; //0 values indicate 'error' if not populated
+			}
 		}
-		if(line[i]==';')
-		{flag=1;}
-	}
-	return set;
+	
+		while(fGRAMMAR != EOF)
+		{
+			char *linestream= (char*)malloc(LINESIZE*sizeof(char));
+			if(fgets(linestream,LINESIZE,fGRAMMAR) == NULL) //gets a line from file to linestream
+				break;
+			grammarLine++;
+			char *NT = (char*)malloc(sizeof(char)*VSIZE);
+			char *prod = (char*)malloc(sizeof(char)*VSIZE);
+			// char *firstSet = (char*)malloc(sizeof(char)*LINESIZE);
+			char firstSet[LINESIZE];
+			sscanf(linestream, "%s ; %s", NT, prod ); //string scanf in format
+			//find FIRST (prod), add this rule to each e in the set, to PT[NT,e]
+			// firstSet = getFSTFLW(prod, fFIRST); //hope this works.
+			memcpy(firstSet,getFSTFLW(prod, fFIRST),LINESIZE);
+			// char search_string[]="Some words here for example";
+  			char *array[50];
+  			int emptyTransfound = 0;
+  			int dollarfound = 0;
+  			if(getWords(firstSet,array) == 1) //success in getting words
+  			{
+			  	int j;
+				for(j=0;j<50;j++)
+			   {
+			      if(strcmp(array[j],"NULL") ==0) 
+			      break; //come out when array ends
+			      //op
+			      int row = (int)NT;
+			      PT[row][(int)array[j]] = grammarLine; //production no
+			      if(strcmp(array[j] ,"EMPTY")==0)
+			      	{ emptyTransfound = 1;}
+				}
+  			}
+
+  			if(emptyTransfound)
+  			{	
+  				char followSet[LINESIZE];
+  				// followSet = getFSTFLW(prod, fFOLLOW); //hope this works.
+  				memcpy(followSet,getFSTFLW(prod, fFOLLOW),LINESIZE);
+  				char *array[50];
+  				if(getWords(followSet,array) == 1) //success in getting words
+	  			{
+				  	int j;
+					for(j=0;j<50;j++)
+				   {
+				      if(strcmp(array[j],"NULL") ==0 )
+				      break; //come out when array ends
+				      //op
+				      PT[(int)NT][(int)array[j]] = grammarLine; //production no
+				      if(strcmp(array[j],"DOL")==0)
+				      	{ dollarfound = 1;}
+					}
+	  			}
+  			}
+
+  			if(emptyTransfound && dollarfound)
+  			{
+  				PT[(int)NT][DOL] = grammarLine; //production no
+  			}
+
+		}
 }
+
 
 int getWords(char a[], char *array[])
 {  

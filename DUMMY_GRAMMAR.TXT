@@ -1,8 +1,8 @@
-E ; T E'
-E' ; + T E'
-E' ; ?
-T ; F T'
-T' ; * F T'
-T' ; ?
-F ; ( E )
+E ; T Ed
+Ed ; PLUS T Ed
+Ed ; EMPTY
+T ; F Td
+Td ; MUL F Td
+Td ; EMPTY
+F ; OP E CL
 F ; ID
