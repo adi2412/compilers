@@ -1,5 +1,5 @@
-E ; ) $
-E' ; ) $
-T ; + ) $
-T' ; + ) $
-F ; + * ) $
+E ; CL DOL
+Ed ; CL DOL
+T ; PLUS CL DOL
+Td ; PLUS CL DOL
+F ; PLUS MUL CL DOL
