@@ -335,14 +335,14 @@ first makeFirstUsingTerm(rule gramRule, nonterm head, terminals terms)
 						else
 						{
 							// Non terminal does not consist of NULL production
-							//head[nonTerm]->nullable = FALSE;
+							head[nonTerm]->nullable = FALSE;
 							return head[nonTerm]->firstSet;
 						}
 					}
 					else
 					{
 						// It is a terminal. Return back.
-						//head[nonTerm]->nullable = FALSE;
+						head[nonTerm]->nullable = FALSE;
 						return head[nonTerm]->firstSet;
 					}
 				}
@@ -546,6 +546,31 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 		}
 		ruleList = ruleList->nextRule;
 	}
+	if(head[nonTerm]->nullable)
+	{
+		// It has a nullable. Find the nullable production.
+		fprintf(stderr,"it is nullable-- %d\n",nonTerm);
+		rule findRule = headRule;
+		while(findRule != NULL)
+		{
+			if((findRule->nonterm_value) == nonTerm)
+			{
+				if(findRule->nullable) break;
+			}
+			findRule = findRule->nextRule;
+		}
+		int nullRuleNum = findRule->ruleNum;
+		printf("nullable rule found at %d\n",nullRuleNum);
+		follow followTerms = head[nonTerm]->followSet;
+		int i = 0;
+		for(;i<TERMINALS;++i)
+		{
+			if(followTerms[i] != NULL)
+			{
+				head[nonTerm]->followSet[i]->ruleNum = nullRuleNum;
+			}
+		}
+	}
 	return head[nonTerm]->followSet;
 }
 
@@ -573,13 +598,14 @@ follow computeFollow(rule gramRule, nonterm head)
 					findRule = findRule->nextRule;
 				}
 				int nullRuleNum = findRule->ruleNum;
-				follow followTerms = head[terms->term_value.nontermValue]->followSet;
+				printf("nullable rule found at %d\n",nullRuleNum);
+				//follow followTerms = head[terms->term_value.nontermValue]->followSet;
 				int i = 0;
 				for(;i<TERMINALS;++i)
 				{
-					if(followTerms[i] != NULL)
+					if(head[terms->term_value.nontermValue]->followSet[i] != NULL)
 					{
-						followTerms[i]->ruleNum = nullRuleNum;
+						head[terms->term_value.nontermValue]->followSet[i]->ruleNum = nullRuleNum;
 					}
 				}
 			}
