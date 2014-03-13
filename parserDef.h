@@ -10,6 +10,8 @@
 
 #define RULESIZE 150
 #define NONTERMSIZE 25
+#define TERMINALS 42 // Number of terminals that exist
+#define NONTERMINALS 40 // Number of non terminals that exist
 #define OFFSET 6 // defined by the format adopted in grammar_rules.txt
 
 /*
@@ -67,37 +69,36 @@ typedef enum isNonTerm
 
 typedef enum isNonTerm hasEmpty;
 
+typedef enum isNonTerm isNullable;
+
 
 /*
 // Structure for storing first and follow sets of different non Terminals.
 */
 
-typedef struct _first *first;
-typedef struct _follow *follow;
+typedef struct _first **first;
+typedef struct _follow **follow;
 
 struct _first
 {
 	token token_name;
 	int ruleNum;
-	first nextFirst;
 };
 
 struct _follow
 {
 	token token_name;
 	int ruleNum;
-	follow nextFollow;
 };
 
-typedef struct _nonterm *nonterm;
+typedef struct _nonterm **nonterm;
 
 struct _nonterm
 {
 	nonTerminal nonterm_value;
 	first firstSet;
 	follow followSet;
-	nonterm nextNonTerm;
-	int nullable;
+	isNullable nullable;
 };
 
 

@@ -4,3 +4,7 @@ ffgen
 test.txt
 *.exe
 *.stackdump
+.DS_Store
+ffg
+first_follow_gen.o
+lexer.o
