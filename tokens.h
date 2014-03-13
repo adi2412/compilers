@@ -48,6 +48,7 @@ typedef enum tokens{
 	GE,
 	NE,
 	FUNCTION,
+	DOL,
 	NIL,
 	INVALID
 } token;

@@ -12,8 +12,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "lexer.h"	// Might be changed to another header file for the tokens.
 #include "tokens.h"
+#include "lexer.h"	// Might be changed to another header file for the tokens.
+
 
 #define FUNSIZE 20 // Don't know the correct value currently UPDATE
 #define IDSIZE 20 //UPDATE
@@ -21,14 +22,14 @@
 
 buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
 
-tokenInfo getNextToken(FILE *fp, buffer B);
 /*
 // Shows all the different errors.
 // TODO: Figure out the correct implementation of error.
 */
 void showError()
 {
-	printf("Error generated!");
+	printf("\n\x1b[31mError generated!\n\x1b[0m");
+	exit(0);
 }
 
 FILE *getStream(FILE *fp, buffer B, buffersize k)
@@ -1095,11 +1096,13 @@ char* getTokenName(token name)
 		case NE: return "NE";
 		case EQ: return "EQ";
 		case FUNCTION: return "FUNCTION";
-		default: return "Kuch aur"; break;
+		case DOL: return "DOLLAR";
+		case NIL: return "EPSILON";
+		default: return "Kuch aur";
 	}
 }
 
-int main()
+/*int main()
 {
 	FILE *source;
 	source = fopen("test.txt","r");
@@ -1152,4 +1155,4 @@ int main()
 	printf("\n");
 	fclose(source);
 	return 0;
-}
+}*/

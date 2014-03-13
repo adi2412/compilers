@@ -25,7 +25,7 @@ struct _buffer
 };
 
 FILE *getStream(FILE *fp, buffer B, buffersize k);
-tokenInfo getNextToken(FILE *fp);
+tokenInfo getNextToken(FILE *fp, buffer B);
 tokenInfo	lexer(FILE *fp);
 char* getTokenName(token name);
 

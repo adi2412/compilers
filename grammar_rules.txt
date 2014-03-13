@@ -30,7 +30,7 @@
 [ rightHandSide_type1 ] ===) [ funCallStmt ] 
 [ rightHandSide_type2 ] ===) [ sizeExpression ] 
 [ rightHandSide_type2 ] ===) [ funCallStmt ] 
-[ sizeExpression ] == ] SIZE ID 
+[ sizeExpression ] ===) SIZE ID 
 [ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] ELSE [ stmt ] [ otherStmts ] ENDIF SEMICOLON 
 [ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] ENDIF SEMICOLON 
 [ otherStmts ] ===) [ stmt ] [ otherStmts ] 
@@ -44,12 +44,12 @@
 [ listVar ] ===) ? 
 [ arithmeticExpression ] ===) [ arithmeticTerm ] [ operator_lowPrecedence ] [ arithmeticExpression ] 
 [ arithmeticExpression ] ===) [ arithmeticTerm ] 
+[ arithmeticExpression ] ===) OP [ arithmeticExpression ] CL 
+[ arithmeticExpression ] ===) [ var ] 
 [ arithmeticTerm ] ===) [ factor ] [ operator_highPrecedence ] [ arithmeticTerm ] 
 [ arithmeticTerm ] ===) [ factor ] 
 [ factor ] ===) OP [ arithmeticExpression ] CL 
 [ factor ] ===) [ var ] 
-[ arithmeticExpression ] ===) OP [ arithmeticExpression ] CL 
-[ arithmeticExpression ] ===) [ var ] 
 [ operator_lowPrecedence ] ===) PLUS 
 [ operator_lowPrecedence ] ===) MINUS 
 [ operator_highPrecedence ] ===) MUL 

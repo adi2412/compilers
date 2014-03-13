@@ -6,6 +6,10 @@
 #include "parserDef.h"
 #include "lexer.h"
 
+rule headRule;
+
+first computeFirst(rule gramRule, nonterm head);
+
 int getNonTerminal(char* term)
 {
 	// Check for all the possible types of non terminals
@@ -233,6 +237,359 @@ rule readAndDefineGrammarRule(FILE *fp)
 	return gramRule;
 }
 
+nonterm initialiseNonTerminals()
+{
+	// Initialise all pointers to NULL.
+	int i = 0;
+	nonterm nonTermHead = malloc(NONTERMINALS*sizeof(struct _nonterm*));
+	for(;i<NONTERMINALS;++i)
+	{
+		nonTermHead[i] = NULL;
+	}
+	// Initialise their first and follow sets to NULL.
+	// for(i=0;i<NONTERMINALS;++i)
+	// {
+	// 	int j;
+	// 	for(j=0;j<TERMINALS;++j)
+	// 	{
+	// 		nonTermHead[i]->firstSet[j] = NULL;
+	// 		nonTermHead[i]->followSet[j] = NULL;
+	// 	}
+	// }
+	return nonTermHead;
+}
+
+first addFirsts(first mainSet, first copySet, rule gramRule)
+{
+	int i;
+	for(i=0;i<TERMINALS;++i)
+	{
+		if(copySet[i] != NULL)
+		{
+			mainSet[i] = malloc(sizeof(struct _first));
+			mainSet[i]->token_name = copySet[i]->token_name;
+			mainSet[i]->ruleNum = gramRule->ruleNum;
+		}
+	}
+
+	return mainSet;
+}
+
+first makeFirstUsingTerm(rule gramRule, nonterm head, terminals terms)
+{
+	nonTerminal nonTerm = gramRule->nonterm_value;
+	if(head[nonTerm] == NULL)
+	{
+		head[nonTerm] = malloc(sizeof(struct _nonterm));
+	}
+	// Check to see if terms exist.
+	if(terms == NULL)
+	{
+		return head[nonTerm]->firstSet;
+	}
+	if(!(terms->term_value.flag))
+	{
+		// It is a terminal. Just assign this to the firstSet.
+		token tokValue = terms->term_value.tokValue;
+		if(head[nonTerm]->firstSet == NULL)
+		{
+			head[nonTerm]->firstSet = malloc(TERMINALS*sizeof(struct _first*));
+		}
+		head[nonTerm]->firstSet[tokValue] = malloc(sizeof(struct _first));
+		head[nonTerm]->firstSet[tokValue]->token_name = tokValue;
+		head[nonTerm]->firstSet[tokValue]->ruleNum = gramRule->ruleNum;
+		if(tokValue == NIL)
+		{
+			// It is a nil value. Keep adding next term to first set.
+			head[nonTerm]->nullable = TRUE;
+			// CONSIDER: The grammar has single production rules. Which is why I am not considering even going ahead if this term is nil and just ending it here.
+		}
+		return head[nonTerm]->firstSet;
+	}
+	else
+	{
+		// It is a non terminal. Assign the first set of non terminal to this non terminal.
+		nonTerminal otherNonTerm = terms->term_value.nontermValue;
+		if(head[otherNonTerm] != NULL)
+		{
+			// The first set of this non terminal has already been computed. Just use.
+			first firstSet = head[otherNonTerm]->firstSet;
+			//int i;
+			if(head[nonTerm]->firstSet == NULL)
+			{
+				head[nonTerm]->firstSet = malloc(TERMINALS*sizeof(struct _first*));
+			}
+			head[nonTerm]->firstSet = addFirsts(head[nonTerm]->firstSet,firstSet,gramRule);
+			if(firstSet[NIL] != NULL)
+			{
+				// The first set of this non terminal consists of NULL production
+				terms = terms->nextTerm;
+				while(terms != NULL)
+				{
+					head[nonTerm]->firstSet = makeFirstUsingTerm(gramRule, head, terms);
+					if(terms->term_value.flag)
+					{
+						// It is a non terminal
+						if(head[(terms->term_value.nontermValue)]->firstSet[NIL] != NULL)
+							terms = terms->nextTerm;
+						else
+						{
+							// Non terminal does not consist of NULL production
+							//head[nonTerm]->nullable = FALSE;
+							return head[nonTerm]->firstSet;
+						}
+					}
+					else
+					{
+						// It is a terminal. Return back.
+						//head[nonTerm]->nullable = FALSE;
+						return head[nonTerm]->firstSet;
+					}
+				}
+
+				// All the RHS terms have been exhausted.
+				head[nonTerm]->nullable = TRUE;
+				return head[nonTerm]->firstSet;
+			}
+			// Non terminal does not contain null production. Return directly.
+			return head[nonTerm]->firstSet;
+		}
+		else
+		{
+			// First set of this non terminal has not been computed. Find and then use.
+			// Find the first rule which has this non terminal on LHS.
+			rule findRule = headRule;
+			while(1)
+			{
+				if((findRule->nonterm_value) == otherNonTerm) break;
+
+				findRule = findRule->nextRule;
+			}
+			while((findRule->nonterm_value) == otherNonTerm)
+			{
+				head[otherNonTerm]->firstSet = computeFirst(findRule, head);
+				findRule = findRule->nextRule;
+			}
+
+			// First set computed. Use to create first of the non terminal.
+			head[nonTerm]->firstSet = makeFirstUsingTerm(gramRule, head, terms);
+		}
+	}
+
+	return head[nonTerm]->firstSet;
+}
+
+first computeFirst(rule gramRule, nonterm head)
+{
+	// Computes first sets for a specific non terminal.
+	// CONSIDER: Need to also check that the non terminal of this rule has it's first computed already or not.
+	nonTerminal nonTerm = gramRule->nonterm_value;
+	if(head[nonTerm] == NULL)
+	{
+		head[nonTerm] = malloc(sizeof(struct _nonterm));
+	}
+	// nonTerminal exists but it's first doesn't. Compute the first
+	//first firstSet = malloc(sizeof(struct _first));
+	terminals terms = gramRule->termSet;
+	head[nonTerm]->firstSet = makeFirstUsingTerm(gramRule, head, terms);
+
+	return head[nonTerm]->firstSet;	// Return the existing non terminal itself.
+}
+
+follow addFollows(follow mainSet, follow copySet, rule gramRule)
+{
+	int i;
+	for(i=0;i<TERMINALS-2;++i)
+	{
+		if(copySet[i] != NULL)
+		{
+			printf("%d\n",i);
+			if(mainSet[i] == NULL)
+			{
+				mainSet[i] = malloc(sizeof(struct _first));
+				mainSet[i]->token_name = copySet[i]->token_name;
+				mainSet[i]->ruleNum = gramRule->ruleNum;
+			}
+		}
+	}
+
+	return mainSet;
+}
+
+follow addFollowsFromFirst(follow mainSet, first copySet, rule gramRule)
+{
+	int i;
+	for(i=0;i<TERMINALS-2;++i)
+	{
+		if(copySet[i] != NULL)
+		{
+			if(mainSet[i] == NULL)
+			{
+				mainSet[i] = malloc(sizeof(struct _first));
+				mainSet[i]->token_name = copySet[i]->token_name;
+				mainSet[i]->ruleNum = gramRule->ruleNum;
+			}
+		}
+	}
+
+	return mainSet;
+}
+
+int checkNonTerminalInRule(rule checkRule, nonTerminal nonTerm)
+{
+	terminals terms = checkRule->termSet;
+	while(terms != NULL)
+	{
+		if(terms->term_value.flag)
+		{
+			if(terms->term_value.nontermValue == nonTerm)
+			{
+			 	return 1;
+			}
+		}
+		terms = terms->nextTerm;
+	}
+	return 0;
+}
+
+follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
+{
+	if(head[nonTerm]->followSet != NULL) return head[nonTerm]->followSet;
+	//nonTerminal nonTerm = term;
+	fprintf(stderr,"checking %d\n",nonTerm);
+	rule ruleList = headRule;
+	head[nonTerm]->followSet = malloc(TERMINALS*sizeof(struct _follow*));
+	while(ruleList != NULL)
+	{
+		if(checkNonTerminalInRule(ruleList, nonTerm))
+		{
+			terminals RHSTerms = ruleList->termSet;
+			while(RHSTerms != NULL)
+			{
+				if(RHSTerms->term_value.flag)
+				{
+					if(RHSTerms->term_value.nontermValue == nonTerm)
+					{
+						break;
+					}
+				}
+				RHSTerms = RHSTerms->nextTerm;
+			}
+			int flag = 0; // Flag to stop running for a particular rule.
+			// This non terminal exists in RHS of this rule.
+			while((RHSTerms->nextTerm != NULL) && !flag)
+			{
+				if(!(RHSTerms->nextTerm->term_value.flag))
+				{
+					// It is a terminal. Add to the follow set and leave.
+					token tokValue = RHSTerms->nextTerm->term_value.tokValue;
+					head[nonTerm]->followSet[tokValue] = malloc(sizeof(struct _follow));
+					head[nonTerm]->followSet[tokValue]->token_name = tokValue;
+					head[nonTerm]->followSet[tokValue]->ruleNum = ruleList->ruleNum;
+					flag = 1;
+					while(RHSTerms->nextTerm != NULL && flag)
+					{
+						// Check if this same non terminal possibly exists again.
+						if(RHSTerms->nextTerm->term_value.flag)
+						{
+							if(RHSTerms->nextTerm->term_value.nontermValue == nonTerm)
+							{
+								flag = 0;
+								break;
+							}
+
+						}
+						RHSTerms = RHSTerms->nextTerm;
+					}
+				}
+				else
+				{
+					// It is a non terminal.
+					if(RHSTerms->nextTerm->term_value.nontermValue != nonTerm)
+					{
+						nonTerminal otherNonTerm = RHSTerms->nextTerm->term_value.nontermValue;
+						head[nonTerm]->followSet = addFollowsFromFirst(head[nonTerm]->followSet,head[otherNonTerm]->firstSet,ruleList);
+						if(!(head[otherNonTerm]->nullable)) flag = 1;
+					}
+					while(RHSTerms->nextTerm != NULL && flag)
+					{
+						// Check if this same non terminal possibly exists again.
+						if(RHSTerms->nextTerm->term_value.flag)
+						{
+							if(RHSTerms->nextTerm->term_value.nontermValue == nonTerm) flag = 0;
+						}
+						RHSTerms = RHSTerms->nextTerm;
+					}
+				}
+				if(RHSTerms->nextTerm != NULL)
+				{
+					RHSTerms = RHSTerms->nextTerm;
+				}
+			}
+			if(RHSTerms->nextTerm == NULL && RHSTerms->term_value.flag)
+			{
+				if(RHSTerms->term_value.nontermValue == nonTerm)
+				{
+					printf("last term %d for rule number %d--%d\n",nonTerm,ruleList->ruleNum,ruleList->nonterm_value);
+					// Last term. Compute follow of LHS and add to this non terminal.
+					nonTerminal LHSNonTerm = ruleList->nonterm_value;
+					if(head[LHSNonTerm]->followSet == NULL)
+					{
+						head[LHSNonTerm]->followSet = makeFollowForTerm(LHSNonTerm, head);
+					}
+					if(LHSNonTerm != nonTerm)
+					{
+						head[nonTerm]->followSet = addFollows(head[nonTerm]->followSet,head[LHSNonTerm]->followSet,ruleList);
+					}
+				}
+			}
+		}
+		ruleList = ruleList->nextRule;
+	}
+	return head[nonTerm]->followSet;
+}
+
+follow computeFollow(rule gramRule, nonterm head)
+{
+	nonTerminal nonTerm = gramRule->nonterm_value;
+	terminals terms = gramRule->termSet;
+	while(terms != NULL)
+	{
+		if(terms->term_value.flag && (terms->term_value.nontermValue != nonTerm))
+		{
+			// It a non terminal. Compute it's follow
+			head[terms->term_value.nontermValue]->followSet = makeFollowForTerm(terms->term_value.nontermValue, head);
+			if(head[terms->term_value.nontermValue]->nullable)
+			{
+				// It has a nullable. Find the nullable production.
+				fprintf(stderr,"it is nullable-- %d\n",terms->term_value.nontermValue);
+				rule findRule = headRule;
+				while(findRule != NULL)
+				{
+					if((findRule->nonterm_value) == terms->term_value.nontermValue)
+					{
+						if(findRule->nullable) break;
+					}
+					findRule = findRule->nextRule;
+				}
+				int nullRuleNum = findRule->ruleNum;
+				follow followTerms = head[terms->term_value.nontermValue]->followSet;
+				int i = 0;
+				for(;i<TERMINALS;++i)
+				{
+					if(followTerms[i] != NULL)
+					{
+						followTerms[i]->ruleNum = nullRuleNum;
+					}
+				}
+			}
+		}
+		terms = terms->nextTerm;
+	}
+
+	return head[nonTerm]->followSet;
+}
+
 int main()
 {
 	// Creates all the first sets for all the non-terminals
@@ -246,7 +603,7 @@ int main()
 	rule gramRule = readAndDefineGrammarRule(fp);
 	int ruleNum = 1;
 	// Maintain a pointer at the first rule
-	rule headRule = gramRule;
+	headRule = gramRule;
 	while(gramRule != NULL)
 	{
 		// Keep computing first sets and reading grammar rules
@@ -270,24 +627,79 @@ int main()
 		printf("\n");
 		gramRule = gramRule->nextRule;
 	}
+	// Having read all the rules, start computing first sets.
+	gramRule = headRule;
+	
+	nonterm nonTerm = initialiseNonTerminals();
+	int i = gramRule->nonterm_value;
+	while(i<NONTERMINALS)
+	{
+		// First and follow still need to be computed for this non terminal.
+		if(nonTerm[i] != NULL)
+		{
+			if(!nonTerm[i]->nullable) nonTerm[i]->nullable = FALSE;
+		}
+		if(nonTerm[i] == NULL)
+		{
+			nonTerm[i] = malloc(sizeof(struct _nonterm));
+		}
+		nonTerm[i]->firstSet = computeFirst(gramRule,nonTerm);
+		gramRule = gramRule->nextRule;
+		if(gramRule == NULL) break;
+		i = gramRule->nonterm_value;
+	}
 
-	// // Having read all the rules, start computing first sets.
-	// gramRule = headRule;
-	// computeFirst(gramRule);
-	// while(!checkIfAllFirsts(gramRule))
-	// {
-	// 	// All firsts not made. gramRule is pointing at the rule whose FIRST has not been computed
-	// 	computeFirst(gramRule);
-	// }
+	gramRule = headRule;
+	// Compute the follow sets.
+	i = gramRule->nonterm_value;
+	// Set dollar in follow of start symbol
+	nonTerm[i]->followSet = malloc(TERMINALS*sizeof(struct _follow*));
+	nonTerm[i]->followSet[DOL] = malloc(sizeof(struct _follow*));
+	nonTerm[i]->followSet[DOL]->token_name = DOL;
+	nonTerm[i]->followSet[DOL]->ruleNum = gramRule->ruleNum;
+	while(i<NONTERMINALS)
+	{
+		// All non terminals have been malloc'd. Just start finding their follow
+		nonTerm[i]->followSet = computeFollow(gramRule, nonTerm);
+		gramRule = gramRule->nextRule;
+		if(gramRule == NULL) break;
+		i = gramRule->nonterm_value;
+	}
 
-	// // Make the follow sets.
-	// gramRule = headRule;
-	// computeFollow(gramRule);
-	// while(!checkIfAllFollow(gramRule))
-	// {
-	// 	// All follows not made. gramRule is pointing at the rule whose FOLLOW has not been computed.
-	// 	computeFollow(gramRule);
-	// }
+	int j = 0;
+	for(;j<NONTERMINALS-1;++j)
+	{
+		printf("For %d ",j);
+		if(nonTerm[j]->nullable)
+		{
+			printf("(NULLABLE)----->\n");
+		}
+		else
+		{
+			printf("----->\n");
+		}
+		printf("First set:\t");
+		int k =0;
+		for(;k<TERMINALS;++k)
+		{
+			if(nonTerm[j]->firstSet[k] != NULL)
+			{
+				printf("%s\t",getTokenName(nonTerm[j]->firstSet[k]->token_name));
+			}
+		}
+		printf("\n");
+		printf("Follow set:\t");
+		k = 0;
+		for(;k<TERMINALS;++k)
+		{
+			if(nonTerm[j]->followSet[k] != NULL)
+			{
+				printf("%s(%d--%d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum,k);
+			}
+		}
+		printf("\n");
+		printf("\n");
+	}
 
 	return 0;
 }
