@@ -616,7 +616,7 @@ follow computeFollow(rule gramRule, nonterm head)
 	return head[nonTerm]->followSet;
 }
 
-int main()
+int ffg(FILE *source)
 {
 	// Creates all the first sets for all the non-terminals
 	FILE *fp = fopen("grammar_rules.txt","r");

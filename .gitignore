@@ -6,5 +6,8 @@ test.txt
 *.stackdump
 .DS_Store
 ffg
-first_follow_gen.o
-lexer.o
+*.o
+*.zip
+*.txt
+*/*
+stage1exe
