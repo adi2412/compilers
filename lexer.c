@@ -1023,8 +1023,8 @@ char* getTokenName(token name)
 		case LE: return "LE";
 		case GT: return "GT";
 		case GE: return "GE";
-		case NE: return "NE";
 		case EQ: return "EQ";
+		case NE: return "NE";
 		case FUNCTION: return "FUNCTION";
 		case DOL: return "DOLLAR";
 		case NIL: return "EPSILON";
