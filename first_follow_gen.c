@@ -616,7 +616,7 @@ follow computeFollow(rule gramRule, nonterm head)
 	return head[nonTerm]->followSet;
 }
 
-int ffg(FILE *source)
+int ffg(FILE* dest)
 {
 	// Creates all the first sets for all the non-terminals
 	FILE *fp = fopen("grammar_rules.txt","r");
@@ -625,6 +625,8 @@ int ffg(FILE *source)
 		printf("The file could not be found.");
 		exit(1);
 	}
+	FILE *source;
+	source = fopen("first_follow.txt","w");
 	// Read the first grammar rule
 	rule gramRule = readAndDefineGrammarRule(fp);
 	int ruleNum = 1;
@@ -635,22 +637,22 @@ int ffg(FILE *source)
 		// Keep computing first sets and reading grammar rules
 		gramRule->ruleNum = ruleNum++;
 		gramRule->nextRule = readAndDefineGrammarRule(fp);
-		printf("Rule Number %d) %d-->",gramRule->ruleNum,gramRule->nonterm_value);
+		fprintf(source,"Rule Number %d) %d-->",gramRule->ruleNum,gramRule->nonterm_value);
 		terminals readterms = gramRule->termSet;
 		while(readterms != NULL)
 		{
 			if(readterms->term_value.flag)
 			{
 				// Non terminal
-				printf("%d\t",readterms->term_value.nontermValue);
+				fprintf(source,"%d\t",readterms->term_value.nontermValue);
 			}
 			else
 			{
-				printf("%d\t",readterms->term_value.tokValue);
+				fprintf(source,"%d\t",readterms->term_value.tokValue);
 			}
 			readterms = readterms->nextTerm;
 		}
-		printf("\n");
+		fprintf(source,"\n");
 		gramRule = gramRule->nextRule;
 	}
 	// Having read all the rules, start computing first sets.
@@ -695,37 +697,38 @@ int ffg(FILE *source)
 	int j = 0;
 	for(;j<NONTERMINALS-1;++j)
 	{
-		printf("For %d ",j);
+		fprintf(source,"For %d ",j);
 		if(nonTerm[j]->nullable)
 		{
-			printf("(NULLABLE)----->\n");
+			fprintf(source,"(NULLABLE)----->\n");
 		}
 		else
 		{
-			printf("----->\n");
+			fprintf(source,"----->\n");
 		}
-		printf("First set:\t");
+		fprintf(source,"First set:\t");
 		int k =0;
 		for(;k<TERMINALS;++k)
 		{
 			if(nonTerm[j]->firstSet[k] != NULL)
 			{
-				printf("%s\t",getTokenName(nonTerm[j]->firstSet[k]->token_name));
+				fprintf(source,"%s\t",getTokenName(nonTerm[j]->firstSet[k]->token_name));
 			}
 		}
-		printf("\n");
-		printf("Follow set:\t");
+		fprintf(source,"\n");
+		fprintf(source,"Follow set:\t");
 		k = 0;
 		for(;k<TERMINALS;++k)
 		{
 			if(nonTerm[j]->followSet[k] != NULL)
 			{
-				printf("%s(%d--%d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum,k);
+				fprintf(source,"%s(%d--%d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum,k);
 			}
 		}
-		printf("\n");
-		printf("\n");
+		fprintf(source,"\n");
+		fprintf(source,"\n");
 	}
-
+	fclose(fp);
+	fclose(source);
 	return 0;
 }

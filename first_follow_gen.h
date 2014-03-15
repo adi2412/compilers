@@ -1,4 +1,4 @@
 
 
 
-int ffg(FILE *source);
+int ffg(FILE *dest);
