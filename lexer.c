@@ -9,11 +9,15 @@
 //UPDATE: need more information to decide
 //!MODIFY!: possibly wrong, need to modify accordingly
 //CONSIDER: need to think this through
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "tokens.h"
-#include "lexer.h"	// Might be changed to another header file for the tokens.
+#include "lexer.h"
+#include "parserDef.h"
+#include "first_follow_gen.h"
+#include "parser.h"	// Might be changed to another header file for the tokens.
 
 
 #define FUNSIZE 20 // Don't know the correct value currently UPDATE
@@ -1077,7 +1081,14 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	}
 	else{
 		head = tokens;
-		tokens = tokens->nextToken;
+		printf("%s ",getTokenName(tokens->token_name));
+		fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(tokens->token_name),getLexemeName(tokens),tokens->lineNumber,tokens->charNumber);
+		fprintf(dest,"\n");
+		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+		{
+			printf("(%s) ",tokens->token_value);
+		}
+		tokens->nextToken = NULL;
 	}
 	if(firstBuff->nextBuffer == NULL)
 	{

@@ -6,11 +6,13 @@
 */
 
 //Contains all definitions for data types such as grammar, table, parseTree etc. used in parser.c
+#ifndef PARSERDEF
+#define PARSERDEF
 #include "tokens.h"
 
 #define RULESIZE 150
 #define NONTERMSIZE 25
-#define TERMINALS 42 // Number of terminals that exist
+#define TERMINALS 44 // Number of terminals that exist
 #define NONTERMINALS 40 // Number of non terminals that exist
 #define OFFSET 6 // defined by the format adopted in grammar_rules.txt
 
@@ -93,6 +95,8 @@ struct _follow
 
 typedef struct _nonterm **nonterm;
 
+typedef struct _nonterm *NT;
+
 struct _nonterm
 {
 	nonTerminal nonterm_value;
@@ -135,6 +139,8 @@ struct _termSet
 
 typedef struct _rule *rule;
 
+typedef rule grammar;
+
 struct _rule
 {
 	int ruleNum;
@@ -143,3 +149,5 @@ struct _rule
 	hasEmpty nullable;
 	rule nextRule;
 };
+
+#endif

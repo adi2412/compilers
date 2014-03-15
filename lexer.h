@@ -6,6 +6,9 @@
 */
 
 // Contains function prototype declarations of functions in lexer.c
+
+#ifndef LEXER
+#define LEXER
 #define BUFFERSIZE 1024
 
 typedef int buffersize;
@@ -31,7 +34,7 @@ char* getTokenName(token name);
 
 
 
-
+#endif
 
 
 

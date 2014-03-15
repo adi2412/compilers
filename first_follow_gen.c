@@ -9,8 +9,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "parserDef.h"
+#include "tokens.h"
 #include "lexer.h"
+#include "parserDef.h"
+#include "first_follow_gen.h"
+#include "parser.h"
+
 
 
 rule headRule;
@@ -595,7 +599,7 @@ follow computeFollow(rule gramRule, nonterm head)
 				int nullRuleNum = findRule->ruleNum;
 				//follow followTerms = head[terms->term_value.nontermValue]->followSet;
 				int i = 0;
-				for(;i<TERMINALS;++i)
+				for(;i<TERMINALS-2;++i)
 				{
 					if(head[terms->term_value.nontermValue]->followSet[i] != NULL)
 					{
@@ -701,7 +705,8 @@ int ffg(FILE* fp)
 	// Having read all the rules, start computing first sets.
 	gramRule = headRule;
 	
-	nonterm nonTerm = initialiseNonTerminals();
+	nonterm nonTerm;
+	nonTerm = initialiseNonTerminals();
 	int i = gramRule->nonterm_value;
 	while(i<NONTERMINALS)
 	{
@@ -728,7 +733,6 @@ int ffg(FILE* fp)
 	nonTerm[i]->followSet[DOL] = malloc(sizeof(struct _follow*));
 	nonTerm[i]->followSet[DOL]->token_name = DOL;
 	nonTerm[i]->followSet[DOL]->ruleNum = gramRule->ruleNum;
-	//fprintf(stderr,"first sets calculated");
 	while(i<NONTERMINALS)
 	{
 		// All non terminals have been malloc'd. Just start finding their follow
@@ -737,19 +741,10 @@ int ffg(FILE* fp)
 		if(gramRule == NULL) break;
 		i = gramRule->nonterm_value;
 	}
-
 	int j = 0;
 	for(;j<NONTERMINALS-1;++j)
 	{
 		fprintf(fp,"For %s ",getNonTermValue(j));
-		if(nonTerm[j]->nullable)
-		{
-			fprintf(fp,"(NULLABLE)----->\n");
-		}
-		else
-		{
-			fprintf(fp,"----->\n");
-		}
 		fprintf(fp,"First set:\t");
 		int k =0;
 		for(;k<TERMINALS;++k)
@@ -762,7 +757,7 @@ int ffg(FILE* fp)
 		fprintf(fp,"\n");
 		fprintf(fp,"Follow set:\t");
 		k = 0;
-		for(;k<TERMINALS;++k)
+		for(;k<TERMINALS-2;++k)
 		{
 			if(nonTerm[j]->followSet[k] != NULL)
 			{
@@ -772,6 +767,6 @@ int ffg(FILE* fp)
 		fprintf(fp,"\n");
 		fprintf(fp,"\n");
 	}
-
-	return 0;
+	fclose(rules);
+	return 1;
 }

@@ -7,13 +7,14 @@
 
 
 /* Main driver function */
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include "parserDef.h"
-#include "lexerDef.h"
+#include "tokens.h"
 #include "lexer.h"
+#include "parserDef.h"
 #include "first_follow_gen.h"
+#include "parser.h"
 
 int main(int argc,char* argv[])
 {
@@ -57,6 +58,7 @@ int main(int argc,char* argv[])
 		tokenInfo tokens = headToken;
 
 		ffg(destination);
+		fclose(destination);
 		printf("Program successfully tokenized and created first and follow sets\n");
 	}
 }

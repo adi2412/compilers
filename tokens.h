@@ -8,6 +8,8 @@
 // Contains the definions used for tokens.
 
 // All the possible tokens enumerated.
+#ifndef TOKENS
+#define TOKENS
 typedef enum tokens{
 	ASSIGNOP,
 	COMMENT,
@@ -79,3 +81,5 @@ struct _tokenInfo
 	int charNumber;
 	/* data */
 };
+
+#endif
