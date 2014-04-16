@@ -26,6 +26,7 @@ int getNonTerminal(char* term)
 	// Check for all the possible types of non terminals
 	if(!strcmp(term, "[ mainFunction ]")) return mainFunction;
 	else if(!strcmp(term, "[ stmtsAndFunctionDefs ]")) return stmtsAndFunctionDefs;
+	else if(!strcmp(term, "[ stmtsAndFunctionDefs_type1 ]")) return stmtsAndFunctionDefs_type1;
 	else if(!strcmp(term, "[ stmtOrFunctionDef ]")) return stmtOrFunctionDef;
 	else if(!strcmp(term, "[ stmt ]")) return stmt;
 	else if(!strcmp(term, "[ functionDef ]")) return functionDef;
@@ -43,13 +44,16 @@ int getNonTerminal(char* term)
 	else if(!strcmp(term, "[ rightHandSide_type2 ]")) return rightHandSide_type2;
 	else if(!strcmp(term, "[ sizeExpression ]")) return sizeExpression;
 	else if(!strcmp(term, "[ ifStmt ]")) return ifStmt;
+	else if(!strcmp(term, "[ elsePart ]")) return elsePart;
 	else if(!strcmp(term, "[ otherStmts ]")) return otherStmts;
 	else if(!strcmp(term, "[ ioStmt ]")) return ioStmt;
 	else if(!strcmp(term, "[ funCallStmt ]")) return funCallStmt;
 	else if(!strcmp(term, "[ inputParameterList ]")) return inputParameterList;
 	else if(!strcmp(term, "[ listVar ]")) return listVar;
 	else if(!strcmp(term, "[ arithmeticExpression ]")) return arithmeticExpression;
+	else if(!strcmp(term, "[ arithmeticExpression_type2 ]")) return arithmeticExpression_type2;
 	else if(!strcmp(term, "[ arithmeticTerm ]")) return arithmeticTerm;
+	else if(!strcmp(term, "[ arithmeticTerm_type2 ]")) return arithmeticTerm_type2;
 	else if(!strcmp(term, "[ factor ]")) return factor;
 	else if(!strcmp(term, "[ operator_lowPrecedence ]")) return operator_lowPrecedence;
 	else if(!strcmp(term, "[ operator_highPrecedence ]")) return operator_highPrecedence;
@@ -58,6 +62,7 @@ int getNonTerminal(char* term)
 	else if(!strcmp(term, "[ var ]")) return var;
 	else if(!strcmp(term, "[ matrix ]")) return matrix;
 	else if(!strcmp(term, "[ rows ]")) return rows;
+	else if(!strcmp(term, "[ rowsRemaining ]")) return rowsRemaining;
 	else if(!strcmp(term, "[ row ]")) return row;
 	else if(!strcmp(term, "[ remainingColElements ]")) return remainingColElements;
 	else if(!strcmp(term, "[ matrixElement ]")) return matrixElement;
@@ -123,7 +128,7 @@ terminal readRHSTerm(char* term, char* ruleString, int ptr)
 {
 	terminal RHSTerminal;
 	int i = 0;
-	if(ptr >= strlen(ruleString)-3)
+	if(ptr > strlen(ruleString)-3)
 	{
 		// Exceeded too far.
 		RHSTerminal.nontermValue = invalidNonTerm;
@@ -246,7 +251,8 @@ nonterm initialiseNonTerminals()
 {
 	// Initialise all pointers to NULL.
 	int i = 0;
-	nonterm nonTermHead = malloc(NONTERMINALS*sizeof(struct _nonterm*));
+	fprintf(stderr,"%d\n",NONTERMINALS);
+	nonterm nonTermHead = malloc(NONTERMINALS*sizeof(NT));
 	for(;i<NONTERMINALS;++i)
 	{
 		nonTermHead[i] = NULL;
@@ -299,6 +305,11 @@ first makeFirstUsingTerm(rule gramRule, nonterm head, terminals terms)
 		if(head[nonTerm]->firstSet == NULL)
 		{
 			head[nonTerm]->firstSet = malloc(TERMINALS*sizeof(struct _first*));
+			int i=0;
+			for(;i<TERMINALS;++i)
+			{
+				head[nonTerm]->firstSet[i] = NULL;
+			}
 		}
 		head[nonTerm]->firstSet[tokValue] = malloc(sizeof(struct _first));
 		head[nonTerm]->firstSet[tokValue]->token_name = tokValue;
@@ -323,6 +334,11 @@ first makeFirstUsingTerm(rule gramRule, nonterm head, terminals terms)
 			if(head[nonTerm]->firstSet == NULL)
 			{
 				head[nonTerm]->firstSet = malloc(TERMINALS*sizeof(struct _first*));
+				int i=0;
+				for(;i<TERMINALS;++i)
+				{
+					head[nonTerm]->firstSet[i] = NULL;
+				}
 			}
 			head[nonTerm]->firstSet = addFirsts(head[nonTerm]->firstSet,firstSet,gramRule);
 			if(firstSet[NIL] != NULL)
@@ -423,13 +439,14 @@ follow addFollows(follow mainSet, follow copySet, rule gramRule)
 follow addFollowsFromFirst(follow mainSet, first copySet, rule gramRule)
 {
 	int i;
+	mainSet = malloc(TERMINALS*sizeof(struct _follow*));
 	for(i=0;i<TERMINALS-2;++i)
 	{
 		if(copySet[i] != NULL)
 		{
 			if(mainSet[i] == NULL)
 			{
-				mainSet[i] = malloc(sizeof(struct _first));
+				mainSet[i] = malloc(sizeof(struct _follow));
 				mainSet[i]->token_name = copySet[i]->token_name;
 				mainSet[i]->ruleNum = gramRule->ruleNum;
 			}
@@ -462,6 +479,11 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 	//nonTerminal nonTerm = term;
 	rule ruleList = headRule;
 	head[nonTerm]->followSet = malloc(TERMINALS*sizeof(struct _follow*));
+	int i=0;
+	for(;i<TERMINALS;++i)
+	{
+		head[nonTerm]->followSet[i] = NULL;
+	}
 	while(ruleList != NULL)
 	{
 		if(checkNonTerminalInRule(ruleList, nonTerm))
@@ -511,18 +533,22 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 					if(RHSTerms->nextTerm->term_value.nontermValue != nonTerm)
 					{
 						nonTerminal otherNonTerm = RHSTerms->nextTerm->term_value.nontermValue;
+						if(head[otherNonTerm] != NULL)
+							fprintf(stderr,"%d\n",otherNonTerm);
+						else
+							fprintf(stderr, "Kya Chutiyapa Hai %d\n",otherNonTerm);
 						head[nonTerm]->followSet = addFollowsFromFirst(head[nonTerm]->followSet,head[otherNonTerm]->firstSet,ruleList);
 						if(!(head[otherNonTerm]->nullable)) flag = 1;
 					}
-					while(RHSTerms->nextTerm != NULL && flag)
-					{
-						// Check if this same non terminal possibly exists again.
-						if(RHSTerms->nextTerm->term_value.flag)
-						{
-							if(RHSTerms->nextTerm->term_value.nontermValue == nonTerm) flag = 0;
-						}
-						RHSTerms = RHSTerms->nextTerm;
-					}
+					// while(RHSTerms->nextTerm != NULL && flag)
+					// {
+					// 	// Check if this same non terminal possibly exists again.
+					// 	if(RHSTerms->nextTerm->term_value.flag)
+					// 	{
+					// 		if(RHSTerms->nextTerm->term_value.nontermValue == nonTerm) flag = 0;
+					// 	}
+					// 	RHSTerms = RHSTerms->nextTerm;
+					// }
 				}
 				if(RHSTerms->nextTerm != NULL)
 				{
@@ -534,6 +560,20 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 				if(RHSTerms->term_value.nontermValue == nonTerm)
 				{
 					// Last term. Compute follow of LHS and add to this non terminal.
+					nonTerminal LHSNonTerm = ruleList->nonterm_value;
+					if(head[LHSNonTerm]->followSet == NULL)
+					{
+						head[LHSNonTerm]->followSet = makeFollowForTerm(LHSNonTerm, head);
+					}
+					if(LHSNonTerm != nonTerm)
+					{
+						head[nonTerm]->followSet = addFollows(head[nonTerm]->followSet,head[LHSNonTerm]->followSet,ruleList);
+					}
+				}
+				else
+				{
+					nonTerminal otherNonTerm = RHSTerms->term_value.nontermValue;
+					head[nonTerm]->followSet = addFollowsFromFirst(head[nonTerm]->followSet,head[otherNonTerm]->firstSet,ruleList);
 					nonTerminal LHSNonTerm = ruleList->nonterm_value;
 					if(head[LHSNonTerm]->followSet == NULL)
 					{
@@ -617,8 +657,9 @@ follow computeFollow(rule gramRule, nonterm head)
 char* getNonTermValue(nonTerminal nonterm)
 {
 	// Check for all the possible types of non terminals
-	if(nonterm == mainFunction) return "mainFunction";
-	else if(nonterm == stmtsAndFunctionDefs) return "stmtsAndFunctionDefs";
+	if(nonterm == stmtsAndFunctionDefs) return "stmtsAndFunctionDefs";
+	else if(nonterm == mainFunction) return "mainFunction";
+	else if(nonterm == stmtsAndFunctionDefs_type1) return "stmtsAndFunctionDefs_type1";
 	else if(nonterm == stmtOrFunctionDef) return "stmtOrFunctionDef";
 	else if(nonterm == stmt) return "stmt";
 	else if(nonterm == functionDef) return "functionDef";
@@ -636,13 +677,16 @@ char* getNonTermValue(nonTerminal nonterm)
 	else if(nonterm == rightHandSide_type2) return "rightHandSide_type2";
 	else if(nonterm == sizeExpression) return "sizeExpression";
 	else if(nonterm == ifStmt) return "ifStmt";
+	else if(nonterm == elsePart) return "elsePart";
 	else if(nonterm == otherStmts) return "otherStmts";
 	else if(nonterm == ioStmt) return "ioStmt";
 	else if(nonterm == funCallStmt) return "funCallStmt";
 	else if(nonterm == inputParameterList) return "inputParameterList";
 	else if(nonterm == listVar) return "listVar";
 	else if(nonterm == arithmeticExpression) return "arithmeticExpression";
+	else if(nonterm == arithmeticExpression_type2) return "arithmeticExpression_type2";
 	else if(nonterm == arithmeticTerm) return "arithmeticTerm";
+	else if(nonterm == arithmeticTerm_type2) return "arithmeticTerm_type2";
 	else if(nonterm == factor) return "factor";
 	else if(nonterm == operator_lowPrecedence) return "operator_lowPrecedence";
 	else if(nonterm == operator_highPrecedence) return "operator_highPrecedence";
@@ -651,6 +695,7 @@ char* getNonTermValue(nonTerminal nonterm)
 	else if(nonterm == var) return "var";
 	else if(nonterm == matrix) return "matrix";
 	else if(nonterm == rows) return "rows";
+	else if(nonterm == rowsRemaining) return "rowsRemaining";
 	else if(nonterm == row) return "row";
 	else if(nonterm == remainingColElements) return "remainingColElements";
 	else if(nonterm == matrixElement) return "matrixElement";
@@ -663,7 +708,7 @@ char* getNonTermValue(nonTerminal nonterm)
 	}
 }
 
-int ffg(FILE* fp)
+nonterm ffg(FILE* fp)
 {
 	// Creates all the first sets for all the non-terminal
 	FILE *rules = fopen("grammar_rules.txt","r");
@@ -695,16 +740,16 @@ int ffg(FILE* fp)
 			}
 			else
 			{
-				fprintf(fp,"%s\t",getTokenName(readterms->term_value.tokValue));
+				fprintf(fp,"%s(%d)\t",getTokenName(readterms->term_value.tokValue),readterms->term_value.tokValue);
 			}
 			readterms = readterms->nextTerm;
 		}
 		fprintf(fp,"\n");
 		gramRule = gramRule->nextRule;
 	}
+
 	// Having read all the rules, start computing first sets.
 	gramRule = headRule;
-	
 	nonterm nonTerm;
 	nonTerm = initialiseNonTerminals();
 	int i = gramRule->nonterm_value;
@@ -725,48 +770,70 @@ int ffg(FILE* fp)
 		i = gramRule->nonterm_value;
 	}
 	//fprintf(stderr,"first sets calculated");
+
+	// if(nonTerm[arithmeticExpression_type2] != NULL)
+	// 	fprintf(stderr,"%d \n",arithmeticExpression_type2);
+	// else
+	// 	fprintf(stderr, "Kya bakwaas hai bhai\n");
+	
 	gramRule = headRule;
 	// Compute the follow sets.
 	i = gramRule->nonterm_value;
 	// Set dollar in follow of start symbol
-	nonTerm[i]->followSet = malloc(TERMINALS*sizeof(struct _follow*));
-	nonTerm[i]->followSet[DOL] = malloc(sizeof(struct _follow*));
-	nonTerm[i]->followSet[DOL]->token_name = DOL;
-	nonTerm[i]->followSet[DOL]->ruleNum = gramRule->ruleNum;
+	nonTerm[mainFunction]->followSet = malloc(TERMINALS*sizeof(struct _follow*));
+	int j = 0;
+	for(;j<TERMINALS;++j)
+		nonTerm[mainFunction]->followSet[j] = NULL;
+	nonTerm[mainFunction]->followSet[DOL] = malloc(sizeof(struct _follow));
+	nonTerm[mainFunction]->followSet[DOL]->token_name = DOL;
+	nonTerm[mainFunction]->followSet[DOL]->ruleNum = 2;
 	while(i<NONTERMINALS)
 	{
 		// All non terminals have been malloc'd. Just start finding their follow
-		nonTerm[i]->followSet = computeFollow(gramRule, nonTerm);
+		if(i != mainFunction)
+			nonTerm[i]->followSet = computeFollow(gramRule, nonTerm);
 		gramRule = gramRule->nextRule;
 		if(gramRule == NULL) break;
 		i = gramRule->nonterm_value;
 	}
-	int j = 0;
+
+
+	
+	j = 0;
 	for(;j<NONTERMINALS-1;++j)
 	{
 		fprintf(fp,"For %s ",getNonTermValue(j));
 		fprintf(fp,"First set:\t");
 		int k =0;
-		for(;k<TERMINALS;++k)
+		for(;k<TERMINALS-2;++k)
 		{
-			if(nonTerm[j]->firstSet[k] != NULL)
+			if(nonTerm[j] != NULL)
 			{
-				fprintf(fp,"%s\t",getTokenName(nonTerm[j]->firstSet[k]->token_name));
+				if(nonTerm[j]->firstSet[k] != NULL)
+				{
+					fprintf(fp,"%s(Rule no: %d)\t",getTokenName(nonTerm[j]->firstSet[k]->token_name),nonTerm[j]->firstSet[k]->ruleNum);
+				}
 			}
 		}
 		fprintf(fp,"\n");
 		fprintf(fp,"Follow set:\t");
+		fprintf(stderr,"Computing follow set\n");
 		k = 0;
-		for(;k<TERMINALS-2;++k)
+		for(;k<TERMINALS;++k)
 		{
-			if(nonTerm[j]->followSet[k] != NULL)
+			if(nonTerm[j] != NULL)
 			{
-				fprintf(fp,"%s(Rule No: %d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum);
+				if(nonTerm[j]->followSet[k] != NULL)
+				{
+					fprintf(fp,"%s(Rule No: %d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum);
+				}
 			}
 		}
 		fprintf(fp,"\n");
 		fprintf(fp,"\n");
 	}
 	fclose(rules);
-	return 1;
+	// return 1;
+
+	return nonTerm;
 }

@@ -56,9 +56,49 @@ int main(int argc,char* argv[])
 		tokenInfo headToken = lexer(source,destination);
 		// Write to output file.
 		tokenInfo tokens = headToken;
+		if(tokens->nextToken == NULL)
+		{
+			fprintf(stderr, "Kya chutiya bana raha hai\n");
+		}
 
-		ffg(destination);
+		FILE *rules = fopen("grammar_rules.txt","r");
+		if(rules == NULL)
+		{
+			printf("The grammar file could not be found.\n");
+			exit(1);
+		}
+
+		grammar headRule;
+
+		rule gramRule = readAndDefineGrammarRule(rules);
+		int ruleNum = 1;
+		// Maintain a pointer at the first rule
+		headRule = gramRule;
+		while(gramRule != NULL)
+		{
+			// Keep computing first sets and reading grammar rules
+			gramRule->ruleNum = ruleNum++;
+			gramRule->nextRule = readAndDefineGrammarRule(rules);
+			terminals readterms = gramRule->termSet;
+			while(readterms != NULL)
+			{
+				if(readterms->term_value.flag)
+				{
+					printf("%d\t",readterms->term_value.nontermValue);
+				}
+				else
+					printf("%d\t",readterms->term_value.tokValue);
+
+				readterms = readterms->nextTerm;
+			}
+			printf("\n");
+			gramRule = gramRule->nextRule;
+		}
+		fclose(rules);
+		nonterm nonTerms = ffg(destination);
+		parse(nonTerms, tokens, headRule);
 		fclose(destination);
+		
 		printf("Program successfully tokenized and created first and follow sets\n");
 	}
 }

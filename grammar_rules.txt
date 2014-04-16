@@ -1,14 +1,15 @@
-[ mainFunction ] ===) MAIN SQO SQC [ stmtsAndFunctionDefs ] END 
-[ stmtsAndFunctionDefs ] ===) [ stmtOrFunctionDef ] [ stmtsAndFunctionDefs ] 
-[ stmtsAndFunctionDefs ] ===) [ stmtOrFunctionDef ] 
+[ stmtsAndFunctionDefs ] ===) [ stmtOrFunctionDef ] [ stmtsAndFunctionDefs_type1 ] 
+[ mainFunction ] ===) MAIN SQO SQC [ stmtsAndFunctionDefs ] END SEMICOLON 
 [ stmtOrFunctionDef ] ===) [ stmt ] 
 [ stmtOrFunctionDef ] ===) [ functionDef ] 
+[ stmtsAndFunctionDefs_type1 ] ===) [ stmtsAndFunctionDefs ] 
+[ stmtsAndFunctionDefs_type1 ] ===) ? 
 [ stmt ] ===) [ declarationStmt ] 
 [ stmt ] ===) [ assignmentStmt_type1 ] 
 [ stmt ] ===) [ assignmentStmt_type2 ] 
 [ stmt ] ===) [ ifStmt ] 
 [ stmt ] ===) [ ioStmt ] 
-[ stmt ] ===) [ funCallStmt ] 
+[ stmt ] ===) [ funCallStmt ] SEMICOLON 
 [ functionDef ] ===) FUNCTION SQO [ parameter_list ] SQC ASSIGNOP FUNID SQO [ parameter_list ] SQC [ stmtsAndFunctionDefs ] END SEMICOLON 
 [ parameter_list ] ===) [ type ] ID [ remainingList ] 
 [ type ] ===) INT 
@@ -31,23 +32,24 @@
 [ rightHandSide_type2 ] ===) [ sizeExpression ] 
 [ rightHandSide_type2 ] ===) [ funCallStmt ] 
 [ sizeExpression ] ===) SIZE ID 
-[ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] ELSE [ stmt ] [ otherStmts ] ENDIF SEMICOLON 
-[ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] ENDIF SEMICOLON 
+[ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] [ elsePart ] 
+[ elsePart ] ===) ELSE [ stmt ] [otherStmts ] ENDIF SEMICOLON 
+[ elsePart ] ===) ENDIF SEMICOLON 
 [ otherStmts ] ===) [ stmt ] [ otherStmts ] 
 [ otherStmts ] ===) ? 
 [ ioStmt ] ===) READ OP ID CL SEMICOLON 
 [ ioStmt ] ===) PRINT OP ID CL SEMICOLON 
-[ funCallStmt ] ===) FUNID OP [ inputParameterList ] CL SEMICOLON 
+[ funCallStmt ] ===) FUNID OP [ inputParameterList ] CL 
 [ inputParameterList ] ===) [ var ] [ listVar ] 
 [ inputParameterList ] ===) ? 
 [ listVar ] ===) COMMA [ inputParameterList ] 
 [ listVar ] ===) ? 
-[ arithmeticExpression ] ===) [ arithmeticTerm ] [ operator_lowPrecedence ] [ arithmeticExpression ] 
-[ arithmeticExpression ] ===) [ arithmeticTerm ] 
-[ arithmeticExpression ] ===) OP [ arithmeticExpression ] CL 
-[ arithmeticExpression ] ===) [ var ] 
-[ arithmeticTerm ] ===) [ factor ] [ operator_highPrecedence ] [ arithmeticTerm ] 
-[ arithmeticTerm ] ===) [ factor ] 
+[ arithmeticExpression ] ===) [ arithmeticTerm ] [ arithmeticExpression_type2 ] 
+[ arithmeticExpression_type2 ] ===) [ operator_lowPrecedence ] [ arithmeticExpression ] 
+[ arithmeticExpression_type2 ] ===) ? 
+[ arithmeticTerm ] ===) [ factor ] [ arithmeticTerm_type2 ] 
+[ arithmeticTerm_type2 ] ===) [ operator_highPrecedence ] [ arithmeticTerm ] 
+[ arithmeticTerm_type2 ] ===) ? 
 [ factor ] ===) OP [ arithmeticExpression ] CL 
 [ factor ] ===) [ var ] 
 [ operator_lowPrecedence ] ===) PLUS 
@@ -55,27 +57,27 @@
 [ operator_highPrecedence ] ===) MUL 
 [ operator_highPrecedence ] ===) DIV 
 [ booleanExpression ] ===) OP [ booleanExpression ] CL [ logicalOp ] OP [ booleanExpression ] CL 
+[ booleanExpression ] ===) NOT OP [ booleanExpression ] CL 
 [ booleanExpression ] ===) [ constrainedVars ] [ relationalOp ] [ constrainedVars ] 
 [ constrainedVars ] ===) ID 
 [ constrainedVars ] ===) NUM 
 [ constrainedVars ] ===) RNUM 
-[ var ] ===) ID 
+[ var ] ===) ID [ matrixElement ] 
 [ var ] ===) NUM 
 [ var ] ===) RNUM 
-[ var ] ===) [ matrixElement ] 
 [ var ] ===) STR 
 [ var ] ===) [ matrix ] 
 [ matrix ] ===) SQO [ rows ] SQC 
-[ rows ] ===) [ row ] SEMICOLON [ rows ] 
-[ rows ] ===) [ row ] 
+[ rows ] ===) [ row ] [ rowsRemaining ] 
+[ rowsRemaining ] ===) SEMICOLON [ rows ] 
+[ rowsRemaining ] ===) ? 
 [ row ] ===) NUM [ remainingColElements ] 
-[ row ] ===) NUM 
-[ remainingColElements ] ===) COMMA NUM [ remainingColElements ] 
+[ remainingColElements ] ===) COMMA NUM [ remainingColElements ]  
 [ remainingColElements ] ===) ? 
-[ matrixElement ] ===) ID SQO NUM COMMA NUM SQC 
+[ matrixElement ] ===) SQO NUM COMMA NUM SQC 
+[ matrixElement ] ===) ? 
 [ logicalOp ] ===) AND 
 [ logicalOp ] ===) OR 
-[ logicalOp ] ===) NOT 
 [ relationalOp ] ===) LT 
 [ relationalOp ] ===) LE 
 [ relationalOp ] ===) EQ 

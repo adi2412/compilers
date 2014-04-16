@@ -12,8 +12,8 @@
 
 #define RULESIZE 150
 #define NONTERMSIZE 25
-#define TERMINALS 44 // Number of terminals that exist
-#define NONTERMINALS 40 // Number of non terminals that exist
+#define TERMINALS 42 // Number of terminals that exist
+#define NONTERMINALS 45 // Number of non terminals that exist
 #define OFFSET 6 // defined by the format adopted in grammar_rules.txt
 
 /*
@@ -23,6 +23,7 @@
 typedef enum nonTermValue
 {
 	mainFunction,
+	stmtsAndFunctionDefs_type1,
 	stmtsAndFunctionDefs,
 	stmtOrFunctionDef,
 	stmt,
@@ -41,13 +42,16 @@ typedef enum nonTermValue
 	rightHandSide_type2,
 	sizeExpression,
 	ifStmt,
+	elsePart,
 	otherStmts,
 	ioStmt,
 	funCallStmt,
 	inputParameterList,
 	listVar,
 	arithmeticExpression,
+	arithmeticExpression_type2,
 	arithmeticTerm,
+	arithmeticTerm_type2,
 	factor,
 	operator_lowPrecedence,
 	operator_highPrecedence,
@@ -56,6 +60,7 @@ typedef enum nonTermValue
 	var,
 	matrix,
 	rows,
+	rowsRemaining,
 	row,
 	remainingColElements,
 	matrixElement,
