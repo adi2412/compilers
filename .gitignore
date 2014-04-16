@@ -1,3 +1,13 @@
 lexer
 parser
+ffgen
 test.txt
+*.exe
+*.stackdump
+.DS_Store
+ffg
+*.o
+*.zip
+*.txt
+*/*
+stage1exe

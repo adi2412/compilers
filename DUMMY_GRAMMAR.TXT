@@ -1,0 +1,8 @@
+E ; T Ed
+Ed ; PLUS T Ed
+Ed ; EMPTY
+T ; F Td
+Td ; MUL F Td
+Td ; EMPTY
+F ; OP E CL
+F ; ID

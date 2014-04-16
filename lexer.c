@@ -9,43 +9,31 @@
 //UPDATE: need more information to decide
 //!MODIFY!: possibly wrong, need to modify accordingly
 //CONSIDER: need to think this through
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include 'lexer.h'	// Might be changed to another header file for the tokens.
 #include "tokens.h"
+#include "lexer.h"
+#include "parserDef.h"
+#include "first_follow_gen.h"
+#include "parser.h"	// Might be changed to another header file for the tokens.
 
-#define BUFFERSIZE 1024
+
 #define FUNSIZE 20 // Don't know the correct value currently UPDATE
 #define IDSIZE 20 //UPDATE
 #define NUMSIZE 20 //UPDATE
 
-typedef int buffersize;
-
-typedef struct _buffer buffStruct;
-typedef buffStruct *buffer;
-
-// Buffer structure
-struct _buffer
-{
-	char buff[BUFFERSIZE];
-	int curPointer;
-	int fwdPointer;
-	int lineNumber;
-	int charNumber;
-	buffer nextBuffer;
-};
-
 buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
 
-tokenInfo getNextToken(FILE *fp, buffer B);
 /*
 // Shows all the different errors.
 // TODO: Figure out the correct implementation of error.
 */
 void showError()
 {
-	printf("Error generated!");
+	printf("\n\x1b[31mError generated!\n\x1b[0m");
+	exit(0);
 }
 
 FILE *getStream(FILE *fp, buffer B, buffersize k)
@@ -999,76 +987,6 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	return NULL;
 }
 
-/*
-//	The main function of the lexer which is called by the parser.
-//	params-
-//		input: pointer to file.
-//		output: header to the first token which forms a linked list.
-*/
-tokenInfo lexer(FILE *fp)
-{
-	FILE *source = fp;
-	// Initialise tokenInfo
-	tokenInfo tokens = malloc(sizeof(tokenStruct));
-	tokens->nextToken = NULL;
-	tokenInfo head = tokens;	//Points to head token
-	buffer firstBuff = (buffer)malloc(sizeof(buffer));
-	// Initialise the first buffer stream
-	getStream(fp, firstBuff, BUFFERSIZE);
-	firstBuff->curPointer = 0;
-	firstBuff->fwdPointer = 0;
-	firstBuff->charNumber = 1;
-	firstBuff->lineNumber = 1;
-	buffer curBuff = firstBuff; // Current buffer being used.
-	buffer secondBuff = (buffer)malloc(sizeof(buffer));
-	secondBuff->curPointer = 0;
-	secondBuff->fwdPointer = 0;
-	secondBuff->charNumber = 1;
-	secondBuff->lineNumber = 1;
-	firstBuff->nextBuffer = secondBuff;
-	secondBuff->nextBuffer = firstBuff;
-	while(curBuff->buff[firstBuff->curPointer])	//not sure if this works. need to compile and check
-	{
-		/* Send to state checker. */
-		// Handle when buffer is not enough? Here or in getNextToken?
-		// getNextToken should always return some token or the other.
-		tokens = getNextToken(fp, curBuff);
-		// Set character position of next token even before it is made.
-		//tokens->charNumber = charNumber;
-		if(tokens == NULL)
-		{
-			// The current buffer ran out while reading. Use other buffer.
-			if(curBuff == firstBuff)
-			{
-				// The first buffer was current. Use the second.
-				getStream(fp, secondBuff, BUFFERSIZE);
-				// Do something about null being return by getStream.
-				curBuff = secondBuff;
-			}
-			else
-			{
-				// The second buffer was current.
-				getStream(fp, firstBuff, BUFFERSIZE);
-				// Do something about null being returned by getStream.
-				curBuff = firstBuff;
-			}
-		}
-		else
-		{
-			// correct token returned!
-			tokens->lineNumber = curBuff->lineNumber;
-			// Initialize the next token in the linked list.
-			tokens->nextToken = malloc(sizeof(tokenStruct));
-			// Set value of charNumber to current position of pointer
-			//charNumber = curBuff->curPointer;
-			// Set tokens to point to next tokens.
-			tokens = tokens->nextToken;
-			tokens->nextToken = NULL;
-		}
-	} // Here's hopin this kind of works.
-	return NULL;
-}
-
 char* getTokenName(token name)
 {
 	switch(name)
@@ -1109,17 +1027,35 @@ char* getTokenName(token name)
 		case LE: return "LE";
 		case GT: return "GT";
 		case GE: return "GE";
-		case NE: return "NE";
 		case EQ: return "EQ";
+		case NE: return "NE";
 		case FUNCTION: return "FUNCTION";
-		default: return "Kuch aur"; break;
+		case DOL: return "DOLLAR";
+		case NIL: return "EPSILON";
+		default: return "Kuch aur";
 	}
 }
 
-int main()
+char* getLexemeName(tokenInfo tokens)
 {
-	FILE *source;
-	source = fopen("test.txt","r");
+	if(tokens->token_name == STR || tokens->token_name == FUNID || tokens->token_name == ID || tokens->token_name == NUM || tokens->token_name == RNUM)
+	{
+		return tokens->token_value;
+	}
+	else
+		return getTokenName(tokens->token_name);
+}
+
+/*
+//	The main function of the lexer which is called by the parser.
+//	params-
+//		input: pointer to file.
+//		output: header to the first token which forms a linked list.
+*/
+tokenInfo lexer(FILE *source, FILE* dest)
+{
+	// FILE *source;
+	// source = fopen("test.txt","r");
 	tokenInfo tokens;
 	buffer firstBuff = malloc(sizeof(buffStruct));	
 	firstBuff->curPointer = 0;
@@ -1137,36 +1073,114 @@ int main()
 	// Initialise the first buffer stream
 	getStream(source, firstBuff, BUFFERSIZE);
 	curBuff = firstBuff; // Current buffer being used.
+	tokens = getNextToken(source,curBuff);
+	tokenInfo head;
+	if(tokens == NULL)
+	{
+		return NULL;
+	}
+	else{
+		head = tokens;
+		printf("%s ",getTokenName(tokens->token_name));
+		fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(tokens->token_name),getLexemeName(tokens),tokens->lineNumber,tokens->charNumber);
+		fprintf(dest,"\n");
+		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+		{
+			printf("(%s) ",tokens->token_value);
+		}
+		tokens->nextToken = NULL;
+	}
 	if(firstBuff->nextBuffer == NULL)
 	{
 		return 0;
 	}
 	while(curBuff->buff[curBuff->curPointer] != EOF)
 	{
-		tokens = getNextToken(source, curBuff);
-		if(tokens == NULL)
+		tokenInfo nextTokens = getNextToken(source, curBuff);
+		if(nextTokens == NULL)
 		{
 			// End of file reached. Stop here.
 			break;
 		}
 		else
 		{
-			tokens->nextToken = malloc(sizeof(tokenStruct));
+			tokens->nextToken = nextTokens;
 			//printf("%p is the address\n", curBuff);
-			if(tokens->lineNumber != lineNumber)
+			if(nextTokens->lineNumber != lineNumber)
 			{
 				printf("\n");
+				fprintf(dest,"\n");
 				//curBuff->lineNumber = tokens->lineNumber;
 				++lineNumber;
 			}
-			printf("%s ",getTokenName(tokens->token_name));
-			if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
-				printf("(%s) ",tokens->token_value);
+			printf("%s ",getTokenName(nextTokens->token_name));
+			fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(nextTokens->token_name),getLexemeName(nextTokens),nextTokens->lineNumber,nextTokens->charNumber);
+			fprintf(dest,"\n");
+			if(nextTokens->token_name == ID || nextTokens->token_name == STR || nextTokens->token_name == FUNID)
+			{
+				printf("(%s) ",nextTokens->token_value);
+			}
 			tokens = tokens->nextToken;
 			tokens->nextToken = NULL;
 		}
 	}
+	tokens = head;
 	printf("\n");
+	fprintf(dest,"\n");
 	fclose(source);
-	return 0;
+	return head;
 }
+// int main()
+// {
+// 	FILE *source;
+// 	source = fopen("test.txt","r");
+// 	tokenInfo tokens;
+// 	buffer firstBuff = malloc(sizeof(buffStruct));	
+// 	firstBuff->curPointer = 0;
+// 	firstBuff->fwdPointer = 0;
+// 	firstBuff->charNumber = 1;
+// 	firstBuff->lineNumber = 1;
+// 	buffer secondBuff = malloc(sizeof(buffStruct));
+// 	secondBuff->curPointer = 0;
+// 	secondBuff->fwdPointer = 0;
+// 	secondBuff->charNumber = 1;
+// 	secondBuff->lineNumber = 1;
+// 	firstBuff->nextBuffer = secondBuff;
+// 	secondBuff->nextBuffer = firstBuff;
+// 	int lineNumber = 1;
+// 	// Initialise the first buffer stream
+// 	getStream(source, firstBuff, BUFFERSIZE);
+// 	curBuff = firstBuff; // Current buffer being used.
+// 	if(firstBuff->nextBuffer == NULL)
+// 	{
+// 		return 0;
+// 	}
+// 	while(curBuff->buff[curBuff->curPointer] != EOF)
+// 	{
+// 		tokens = getNextToken(source, curBuff);
+// 		if(tokens == NULL)
+// 		{
+// 			// End of file reached. Stop here.
+// 			break;
+// 		}
+// 		else
+// 		{
+// 			tokens->nextToken = malloc(sizeof(tokenStruct));
+// 			//printf("%p is the address\n", curBuff);
+// 			if(tokens->lineNumber != lineNumber)
+// 			{
+// 				printf("\n");
+// 				//curBuff->lineNumber = tokens->lineNumber;
+// 				++lineNumber;
+// 			}
+// 			printf("%s ",getTokenName(tokens->token_name));
+// 			if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+// 				printf("(%s) ",tokens->token_value);
+// 			tokens = tokens->nextToken;
+// 			tokens->nextToken = NULL;
+// 		}
+// 	}
+// 	printf("\n");
+// 	fclose(source);
+// 	return 0;
+// }
