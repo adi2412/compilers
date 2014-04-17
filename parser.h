@@ -55,6 +55,6 @@ struct _astTree
 	astData element;
 };
 
-int parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
+tree parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
 
 #endif

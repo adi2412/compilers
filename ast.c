@@ -43,46 +43,109 @@ void initialiseASTTree()
 
 void goToNextNonTerminalASTNode()
 {
-	if(currentASTNode->sisterNode != NULL)
+	fprintf(stderr,"Oh yea\n");
+	if(currentASTNode->childNode != NULL)
 	{
-		currentASTNode = currentASTNode->sisterNode;
-		return;
+		currentASTNode = currentASTNode->childNode;
 	}
 	else
 	{
-		if(currentASTNode->parentNode == NULL)
+		// It does not have any children.
+		fprintf(stderr, "No children\n");
+		if(currentASTNode->sisterNode != NULL)
 		{
-			currentASTNode = NULL;
+			currentASTNode = currentASTNode->sisterNode;
 			return;
 		}
 		else
 		{
-			currentASTNode = currentASTNode->parentNode;
-			goToNextNonTerminalASTNode();
+			fprintf(stderr, "No sister\n");
+			if(currentASTNode->parentNode == NULL)
+			{
+				currentASTNode = NULL;
+				return;
+			}
+			else
+			{
+				fprintf(stderr, "Baap ke paas jana padha\n");
+				currentASTNode = currentASTNode->parentNode;
+				while(currentASTNode->sisterNode == NULL)
+				{
+					fprintf(stderr, "Baap ki behen nahi hai\n");
+					if(currentASTNode->parentNode == NULL)
+					{
+						currentASTNode = NULL;
+						return;
+					}
+					else
+						currentASTNode = currentASTNode->parentNode;
+				}
+				currentASTNode = currentASTNode->sisterNode;
+			}
 		}
 	}
 }
 
 void goToNextNonTerminalNode()
 {
-	if(currentNode->sisterNode != NULL)
+	if(currentNode->childNode != NULL)
 	{
-		currentNode = currentNode->sisterNode;
-		return;
+		currentNode = currentNode->childNode;
 	}
 	else
 	{
-		if(currentNode->parentNode == NULL)
+		// It does not have any children.
+		fprintf(stderr, "No child\n");
+		if(currentNode->sisterNode != NULL)
 		{
-			currentNode = NULL;
+			fprintf(stderr, "Meri behen\n");
+			currentNode = currentNode->sisterNode;
 			return;
 		}
 		else
 		{
-			currentNode = currentNode->parentNode;
-			goToNextNonTerminalNode();
+			if(currentNode->parentNode == NULL)
+			{
+				currentNode = NULL;
+				return;
+			}
+			else
+			{
+				currentNode = currentNode->parentNode;
+				while(currentNode->sisterNode == NULL)
+				{
+					if(currentNode->parentNode == NULL)
+					{
+						currentNode = NULL;
+						return;
+					}
+					else
+						currentNode = currentNode->parentNode;
+				}
+				currentNode = currentNode->sisterNode;
+			}
 		}
 	}
+}
+
+void findNextASTNode()
+{
+	astTree sister = currentASTNode->sisterNode;
+	astTree parent = currentASTNode->parentNode;
+	while(sister == NULL)
+	{
+		if(parent == NULL)
+		{
+			currentASTNode = NULL;
+			return;
+		}
+		else
+		{
+			sister = parent->sisterNode;
+			parent = parent->parentNode;
+		}
+	}
+	currentASTNode = sister;
 }
 
 
@@ -101,20 +164,38 @@ void addChildASTNodes(semrule rule)
 	astTree prevNode = treeNode;
 	while(semTerms != NULL)
 	{
+		fprintf(stderr,"Going over here\n");
 		astTree newNode = malloc(sizeof(struct _astTree));
 		newNode->parentNode = currentASTNode;
-		treeNode->childNode = NULL;
-		treeNode->sisterNode = NULL;
-		treeNode->ruleNum = 0;
+		newNode->childNode = NULL;
+		newNode->sisterNode = NULL;
+		newNode->ruleNum = 0;
 		sem semTerm = semTerms->sem_value;
-		treeNode->element = semTerm;
+		newNode->element = semTerm;
 		prevNode->sisterNode = newNode;
 		prevNode = newNode;
 		semTerms = semTerms->nextSem;
 	}
-	currentASTNode = currentASTNode->childNode;
-	if(currentASTNode->element.isLeaf)
+	if(currentASTNode->childNode != NULL)
+	{
+		currentASTNode = currentASTNode->childNode;
+	}
+	else
+	{
 		goToNextNonTerminalASTNode();
+	}
+	fprintf(stderr,"Reach here\n");
+	fprintf(stderr, "%d\n", currentASTNode->element.isLeaf);
+	while(currentASTNode->element.isLeaf)
+	{
+		fprintf(stderr,"Going into while");
+		goToNextNonTerminalASTNode();
+		if(currentASTNode == NULL)
+		{
+			return;
+		}
+	}
+	fprintf(stderr,"Ok bye\n");
 }
 
 void createASTTreeFromParseTree()
@@ -133,37 +214,138 @@ void createASTTreeFromParseTree()
 				int ruleNum = currentNode->ruleNum;
 				semrule semRule = semRules[ruleNum-1];
 				currentASTNode->ruleNum = ruleNum;
+				printf("Adding child nodes for %s(%d)\n",getNonTermValue(semRule->nonterm_value),ruleNum);
 				addChildASTNodes(semRule);
 				currentNode = currentNode->childNode;
-				if(!currentNode->element.flag)
-					goToNextNonTerminalNode();
-				createASTTreeFromParseTree();
-			}
-			else
-			{
-				while(currentNode->element.nontermValue != currentASTNode->element.nontermValue)
+				while(!currentNode->element.flag)
 				{
 					goToNextNonTerminalNode();
 					if(currentNode == NULL)
 						return;
 				}
+				fprintf(stderr,"I'm here\n");
+				createASTTreeFromParseTree();
+			}
+			else
+			{
+				fprintf(stderr,"Over here\n");
+				while(currentNode->element.nontermValue != currentASTNode->element.nontermValue)
+				{
+					fprintf(stderr, "Trying to find another node because %d and %d\n",currentNode->element.nontermValue,currentASTNode->element.nontermValue);
+					goToNextNonTerminalNode();
+					if(currentNode == NULL)
+						return;
+				}
+				fprintf(stderr,"rule number %d\n",currentNode->ruleNum);
 				int ruleNum = currentNode->ruleNum;
+				fprintf(stderr,"Found %d",ruleNum);
 				semrule semRule = semRules[ruleNum-1];
 				currentASTNode->ruleNum = ruleNum;
 				addChildASTNodes(semRule);
 				currentNode = currentNode->childNode;
-				if(!currentNode->element.flag)
+				while(!currentNode->element.flag)
+				{
 					goToNextNonTerminalNode();
+					if(currentNode == NULL)
+						return;
+				}
 				createASTTreeFromParseTree();
 			}
 		}
 	}
 }
 
-int main()
+void printASTTree(astTree node)
+{
+	if(node == NULL)
+	{
+		return;
+	}
+	else
+	{
+		if(!node->element.isLeaf)
+		{
+			printf("Node: %s(%d)\n",getNonTermValue(node->element.nontermValue),node->ruleNum);
+			astTree childNode = node->childNode;
+			if(childNode == NULL)
+			{
+				if(node->sisterNode != NULL)
+					printASTTree(node->sisterNode);
+				else
+				{	
+					if(node->parentNode == NULL)
+					return;
+					else
+					{
+						while(node->parentNode->sisterNode == NULL)
+						{
+							if(node->parentNode == NULL)
+								return;
+							else
+							{
+								node = node->parentNode;
+								if(node->parentNode == NULL)
+									return;
+							}
+						}
+						astTree parentSisterNode = node->parentNode->sisterNode;
+						if(parentSisterNode != NULL)
+							printASTTree(parentSisterNode);
+						else
+							return;
+					}
+				}
+			}
+			else
+			{
+				printASTTree(childNode);
+			}
+		}
+		else
+		{
+			printf("Leaf node: %s", getTokenName(node->element.leafName));
+			if(node->element.leafName== ID || node->element.leafName == STR || node->element.leafName == FUNID)
+				printf("(%s)",node->element.leafValue);
+			printf("\n");
+			if(node->sisterNode != NULL)
+			{
+				printASTTree(node->sisterNode);
+			}
+			else
+			{
+				if(node->parentNode == NULL)
+					return;
+				else
+				{
+					while(node->parentNode->sisterNode == NULL)
+					{
+						if(node->parentNode == NULL)
+							return;
+						else
+						{
+							node = node->parentNode;
+							if(node->parentNode == NULL)
+								return;
+						}
+					}
+					astTree parentSisterNode = node->parentNode->sisterNode;
+					if(parentSisterNode != NULL)
+						printASTTree(parentSisterNode);
+					else
+						return;
+				}
+			}
+		}
+	}
+	return;
+}
+
+int ast(semRuleArray headRule, tree root)
 {
 	initialiseASTTree();
 	currentNode = root;
 	semRules = headRule;
 	createASTTreeFromParseTree();
+	printASTTree(astRoot);
+	return 0;
 }

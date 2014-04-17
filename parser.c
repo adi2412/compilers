@@ -170,6 +170,7 @@ void pushItems(terminals terms)
 
 /*************** Tree functions *******************/
 
+
 void goToNextNode(tokenInfo token)
 {
 	if(currentNode->element.tokValue == token->token_name)
@@ -190,6 +191,8 @@ void goToNextNode(tokenInfo token)
 		if(parent == NULL)
 		{
 			// We reached the root element. Handle somehow.
+			currentNode = NULL;
+			return;
 		}
 		else
 		{
@@ -210,12 +213,44 @@ void goToNextNode(tokenInfo token)
 	}
 }
 
+void findNextNode()
+{
+	tree sister = currentNode->sisterNode;
+	tree parent = currentNode->parentNode;
+	while(sister == NULL)
+	{
+		// tree parent = currentNode->parentNode;
+		if(parent == NULL)
+		{
+			// We reached the root element. Handle somehow.
+			currentNode = NULL;
+			return;
+		}
+		else
+		{
+			sister = parent->sisterNode;
+			parent = parent->parentNode;
+		}
+		fprintf(stderr, "Hey there!\n");
+	}
+	printf("New current node from sister is %d",sister->element.nontermValue);
+	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
+	{
+		currentNode = sister;
+		findNextNode();
+	}
+	else
+	{
+		currentNode = sister;
+	}
+}
+
 void addChildNodes(rule rule)
 {
 	nonTerminal LHSTerm = rule->nonterm_value;
 	if(LHSTerm == currentNode->element.nontermValue)
 	{
-		printf("adding rule number to parse tree\n");
+		printf("adding rule number to parse tree %d\n",rule->ruleNum);
 		currentNode->ruleNum = rule->ruleNum;
 	}
 	else
@@ -258,6 +293,10 @@ void addChildNodes(rule rule)
 	{
 		currentNode = treeNode;
 		printf("current node: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
+	}
+	else
+	{
+		findNextNode();
 	}
 }
 
@@ -356,7 +395,7 @@ int printTree(tree node)
 	return 0;
 }
 
-int parse(nonterm nts, tokenInfo toks, grammar hdRule)
+tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 {
 	nonterm nonTerms = nts;
 	tokenInfo tokens = toks;
@@ -406,6 +445,11 @@ int parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			{
 				// Entry in the parse Table.
 				int ruleNumber = PT[head->element.nontermValue][readToken->token_name].ruleNumber;
+				if(ruleNumber == 0)
+				{
+					printf("Kuch toh gadbad hai boss\n");
+					exit(0);
+				}
 				rule correctRule = findRule(ruleNumber, headRule);
 				pop();
 				pushItems(correctRule->termSet);
@@ -444,5 +488,5 @@ int parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		}
 	}
 
-	return 0;
+	return root;
 }
