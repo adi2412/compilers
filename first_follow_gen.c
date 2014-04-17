@@ -388,6 +388,10 @@ first makeFirstUsingTerm(rule gramRule, nonterm head, terminals terms)
 			}
 			while((findRule->nonterm_value) == otherNonTerm)
 			{
+				if(head[otherNonTerm] == NULL)
+				{
+					head[otherNonTerm] = malloc(sizeof(struct _nonterm));
+				}
 				head[otherNonTerm]->firstSet = computeFirst(findRule, head);
 				findRule = findRule->nextRule;
 			}
