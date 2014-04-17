@@ -41,6 +41,20 @@ struct _tree
 	int ruleNum;
 };
 
-int parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
+typedef sem astData;
+
+typedef struct _astTree *astTree;
+
+struct _astTree
+{
+	astTree sisterNode;
+	astTree parentNode;
+	astTree childNode;
+	// char* name;
+	int ruleNum;
+	astData element;
+};
+
+tree parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
 
 #endif

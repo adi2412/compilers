@@ -16,6 +16,7 @@
 #include "first_follow_gen.h"
 #include "parser.h"
 #include "sem_parser.h"
+#include "ast.h"
 
 int main(int argc,char* argv[])
 {
@@ -97,12 +98,12 @@ int main(int argc,char* argv[])
 		}
 		fclose(rules);
 		nonterm nonTerms = ffg(destination);
-		parse(nonTerms, tokens, headRule);
+		tree root = parse(nonTerms, tokens, headRule);
 		fclose(destination);
 		
 		printf("Program successfully tokenized and created first and follow sets\n");
 
 		semRuleArray  sra = returnSemanticRules();
-
+		ast(sra, root);
 	}
 }

@@ -93,8 +93,7 @@ typedef enum _leafName
 	GT,
 	GE,
 	NE 
-} leafName;
-*/
+} leafName;*/
 
 
 typedef enum isNonTerm
@@ -169,7 +168,6 @@ struct _termSet
 
 //---------------------------
 
-
 typedef struct _sem
 {
 	flag isLeaf;
@@ -178,7 +176,6 @@ typedef struct _sem
 	nonTerminal nontermValue;
 } sem;
 
-
 typedef struct _semset *sems;
 
 struct _semset
@@ -186,8 +183,6 @@ struct _semset
 	sem sem_value;
 	sems nextSem;
 };
-
-
 /*
 // The structure for the grammar rule.
 // nonTerminal: Enumeration of non terminals(LHS of the rule).
@@ -217,6 +212,7 @@ struct _rule
 //	
 
 typedef struct _semrule *semrule;
+
 typedef struct _semrule **semRuleArray;
 
 typedef semrule semantics;

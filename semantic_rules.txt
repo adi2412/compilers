@@ -1,9 +1,9 @@
-[ mainFunction ] := #( MAIN [ stmtsAndFunctionDefs ] ) 
 [ stmtsAndFunctionDefs ] := #( FL [ stmtOrFunctionDef ] [ stmtsAndFunctionDefs_type1 ] ) 
-[ stmtsAndFunctionDefs_type1 ] := %( [ stmtsAndFunctionDefs ] ) 
-[ stmtsAndFunctionDefs_type1 ] := ? 
+[ mainFunction ] := #( MAIN [ stmtsAndFunctionDefs ] ) 
 [ stmtOrFunctionDef ] := %( [ stmt ] ) 
 [ stmtOrFunctionDef ] := %( [ functionDef ] ) 
+[ stmtsAndFunctionDefs_type1 ] := %( [ stmtsAndFunctionDefs ] ) 
+[ stmtsAndFunctionDefs_type1 ] := ? 
 [ stmt ] := %( [ declarationStmt ] ) 
 [ stmt ] := %( [ assignmentStmt_type1 ] )
 [ stmt ] := %( [ assignmentStmt_type2 ] )
@@ -47,7 +47,6 @@
 [ arithmeticExpression ] := #( AE [ arithmeticTerm ] [ arithmeticExpression_type2 ] ) 
 [ arithmeticExpression_type2 ] := #( AE2 [ operator_lowPrecedence ] [ arithmeticExpression ] ) 
 [ arithmeticExpression_type2 ] := ? 
-[ arithmeticExpression ] := %( [ var ] ) 
 [ arithmeticTerm ] := #( AT [ factor ] [ arithmeticTerm_type2 ] ) 
 [ arithmeticTerm_type2 ] := #( AT2 [ operator_highPrecedence ] [ arithmeticTerm ] )
 [ arithmeticTerm_type2 ] := ? 
@@ -63,10 +62,9 @@
 [ constrainedVars ] := ^( ID ID.ent ) 
 [ constrainedVars ] := ^( NUM NUM.val ) 
 [ constrainedVars ] := ^( RNUM RNUM.val ) 
-[ var ] := #( IM , ^( ID ID.ent ) [matrixElement] ) 
+[ var ] := #( IM , ^( ID ID.ent ) [ matrixElement ] ) 
 [ var ] := ^( NUM NUM.val ) 
 [ var ] := ^( RNUM RNUM.val ) 
-[ var ] := %( [ matrixElement ] ) 
 [ var ] := ^( STR STR.val ) 
 [ var ] := %( [ matrix ] ) 
 [ matrix ] := #( MT [ rows ] ) 
@@ -77,6 +75,7 @@
 [ remainingColElements ] := #( RCE ^( NUM NUM.val ) [ remainingColElements ] ) 
 [ remainingColElements ] := ? 
 [ matrixElement ] := #( MEX ^( ID ID.ent ) ^( NUM NUM.val ) ^( NUM NUM.val ) ) 
+[ matrixElement ] := ? 
 [ logicalOp ] := ^( AND ) 
 [ logicalOp ] := ^( OR ) 
 [ relationalOp ] := ^( LT ) 

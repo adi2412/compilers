@@ -21,7 +21,7 @@
 #include "sem_parser.h"
 #define OFFSET2 4 //acc to semantic_rules.txt
 #define OFFSET3 3 //be sem line indicator nd next term
-#define NOSEMRULES 87 //no of sem rules
+#define NOSEMRULES 86 //no of sem rules
 
 void printSemanticRules(semRuleArray rules)
 {
@@ -70,7 +70,8 @@ semRuleArray returnSemanticRules()
 
 		while(semRule[ruleNum-1] != NULL)
 		{
-			semRule[ruleNum-1]->ruleNum = ruleNum++;
+			semRule[ruleNum-1]->ruleNum = ruleNum;
+			ruleNum++;
 		//	semRule[0]->nextRule = readAndDefineSemanticRule(sem_rules_file);
 			semRule[ruleNum-1] = readAndDefineSemanticRule(sem_rules_file);
 			
@@ -116,6 +117,8 @@ semrule readAndDefineSemanticRule(FILE *fp)
 		RHSnodes->sem_value.leafValue = "";
 		RHSnodes->sem_value.nontermValue = invalidNonTerm;
 		RHSnodes->nextSem = NULL;
+		if(SRule->semanticsSet == NULL)
+			SRule->semanticsSet = malloc(sizeof(struct _semset));
 		SRule->semanticsSet = RHSnodes;
 		return SRule;
 	}	
@@ -127,8 +130,11 @@ semrule readAndDefineSemanticRule(FILE *fp)
 	pointer += OFFSET3;
 
 	// Compute the first non terminal
-	sems RHSnodes = getRHSnodes(ruleString,pointer, SRule->isMakeNode_Leaf_Direct);
+	sems RHSnodes = malloc(sizeof(struct _semset));
+	RHSnodes = getRHSnodes(ruleString,pointer, SRule->isMakeNode_Leaf_Direct);
 	//SRule->nullable = RHSTerm->nullable;
+	if(SRule->semanticsSet == NULL)
+		SRule->semanticsSet = malloc(sizeof(struct _semset));
 	SRule->semanticsSet = RHSnodes;
 	return SRule;
 }
@@ -145,6 +151,7 @@ char* readNonTerm(char* term, char* rule, int ptr)
 		++j;
 	}
 	term[j] = ']';
+	term[j+1] = '\0';
 	return term;
 }
 
@@ -193,11 +200,9 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 {
 	sems RHSnodes = malloc(sizeof(struct _semset));
 	sems headRHSnodes = RHSnodes;
-	fprintf(stderr, "Entered 1\n" );
 
 	if(_ch == LEAF)
 	{
-		fprintf(stderr, "Entered 2\n" );
 		sem RHSnode = readLeafTerm(ruleString, ptr);
 		int offset4 = (strcmp(RHSnode.leafValue,"") ==0)?strlen(getTokenName(RHSnode.leafName))+4:0;
 		ptr += strlen(getTokenName(RHSnode.leafName)) + offset4 +2;
@@ -208,7 +213,6 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 	}
 	else if(_ch == DIRECT)
 	{
-		fprintf(stderr, "Entered 3\n" );
 		char* productionTerm = malloc(NONTERMSIZE*sizeof(char));
 		// Read the production term and get the enumerated value
 		productionTerm = readNonTerm(productionTerm, ruleString, ptr);
@@ -226,11 +230,9 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 		sems prevNode;
 		while(ruleString[ptr] != ')')
 		{
-			fprintf(stderr, "Entered 4\n" );
 			if(ruleString[ptr] == '^')
 			{
 				//ensure close paren is already past when ptr returns from readleaf
-				fprintf(stderr, "Entered 5\n" );
 				ptr += OFFSET3;
 				sem RHSnode = readLeafTerm(ruleString, ptr);
 				int offset4 = (strcmp(RHSnode.leafValue,"") ==0)?0:strlen(getTokenName(RHSnode.leafName))+5;
@@ -247,12 +249,10 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 			}		
 			else if(ruleString[ptr] == '[')
 			{
-				fprintf(stderr, "Entered 6\n" );
 				char* productionTerm = malloc(NONTERMSIZE*sizeof(char));
 				// Read the production term and get the enumerated value
 				productionTerm = readNonTerm(productionTerm, ruleString, ptr);
 				nonTerminal nonterm_value = getNonTerminal(productionTerm); //modify the nonterm list
-				fprintf(stderr,"%s",productionTerm);
 				ptr +=  strlen(productionTerm); //update ptr
 				sem RHSnode;
 				RHSnode.isLeaf = FALSE;
@@ -277,11 +277,8 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 			if(prevNode != NULL)
 				prevNode->nextSem = NULL;
 		}
-		fprintf(stderr,"Entered7\n");	
 	}
-	fprintf(stderr,"Returning\n");
 	return headRHSnodes;
-
 }
 
 
