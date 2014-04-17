@@ -1,0 +1,97 @@
+[ mainFunction ] := #( MAIN  [ stmtsAndFunctionDefs ] ) 
+[ stmtsAndFunctionDefs ] := #( FL  [ stmtOrFunctionDef ]  [ stmtsAndFunctionDefs_type1 ] ) 
+[ stmtsAndFunctionDefs_type1 ] := %( [ stmtsAndFunctionDefs ] ) 
+[ stmtsAndFunctionDefs_type1 ] := ? 
+[ stmtOrFunctionDef ] := %( [ stmt ] ) 
+[ stmtOrFunctionDef ] := %( [ functionDef ] ) 
+[ stmt ] := %( [ declarationStmt ] ) 
+[ stmt ] := %( [ assignmentStmt_type1 ] )
+[ stmt ] := %( [ assignmentStmt_type2 ] )
+[ stmt ] := %( [ ifStmt ] ) 
+[ stmt ] := %( [ ioStmt ] ) 
+[ stmt ] := %( [ funCallStmt ] ) 
+[ functionDef ] := #( FUNC  [ parameter_list ]  ^( FUNID  FUNID.ent ) [ parameter_list ]  [ stmtsAndFunctionDefs ] ) 
+[ parameter_list ] := #( PL  [ type ]  ^( ID ID.ent )  [ remainingList ] ) 
+[ type ] := ^( INT ) 
+[ type ] := ^( REAL ) 
+[ type ] := ^( STRING ) 
+[ type ] := ^( MATRIX ) 
+[ remainingList ] := #( RL  [ parameter_list ] ) 
+[ remainingList ] := ? 
+[ declarationStmt ] := #( DS  [ type ]  [ var_list ] ) 
+[ var_list ] := #( VL  ^( ID  ID.ent )  [ more_ids ] 
+[ more_ids ] := #( MI  [ var_list ] )
+[ more_ids ] := ? 
+[ assignmentStmt_type1 ] := #( AS1  [ leftHandSide_singleVar ]  [ rightHandSide_type1 ] ) 
+[ assignmentStmt_type2 ] := #( AS2  [ leftHandSide_listVar ]   [ rightHandSide_type2 ] ) 
+[ leftHandSide_singleVar ] := ^( ID  ID.ent ) 
+[ leftHandSide_listVar ] := %( [ var_list ] ) 
+[ rightHandSide_type1 ] := %( [ arithmeticExpression ] ) 
+[ rightHandSide_type1 ] := %( [ sizeExpression ] ) 
+[ rightHandSide_type1 ] := %( [ funCallStmt ] ) 
+[ rightHandSide_type2 ] := %( [ sizeExpression ] ) 
+[ rightHandSide_type2 ] := %( [ funCallStmt ] ) 
+[ sizeExpression ] := #( SE  ^( ID  ID.ent ) ) 
+[ ifStmt ] := #( IFS  [ booleanExpression ]  [ stmt ]  [ otherStmts ]   [ elsePart ] ) 
+[ elsePart ] := #( ELS  [ stmt ]  [ otherStmts ] ) 
+[ elsePart ] := ? 
+[ otherStmts ] := #( OS  [ stmt ]  [ otherStmts ] ) 
+[ otherStmts ] := ? 
+[ ioStmt ] := #( ID1  ^( ID  ID.ent ) ) 
+[ ioStmt ] := #( ID2  ^( ID  ID.ent ) ) 
+[ funCallStmt ] := #( FC  ^( FUNID  FUNID.ent )  [ inputParameterList ] ) 
+[ inputParameterList ] := #( IP  [ var ]  [ listVar ] ) 
+[ inputParameterList ] := ? 
+[ listVar ] := #( LV  [ inputParameterList ] ) 
+[ listVar ] := ? 
+[ arithmeticExpression ] := #( AE  [ arithmeticTerm ]  [ arithmeticExpression_type2 ] ) 
+[ arithmeticExpression_type2 ] := #( AE2  [ operator_lowPrecedence ]  [ arithmeticExpression ] ) 
+[ arithmeticExpression_type2 ] := ? 
+[ arithmeticExpression ] := %( [ var ] ) 
+[ arithmeticTerm ] := #( AT  [ factor ]  [ arithmeticTerm_type2 ] ) 
+[ arithmeticTerm_type2 ] := #( AT2  [ operator_highPrecedence ]  [ arithmeticTerm ] )
+[ arithmeticTerm_type2 ] := ? 
+[ factor ] := #( FC  [ arithmeticExpression ] ) 
+[ factor ] := %( [ var ] ) 
+[ operator_lowPrecedence ] := ^( PLUS ) 
+[ operator_lowPrecedence ] := ^( MINUS ) 
+[ operator_highPrecedence ] := ^( MUL ) 
+[ operator_highPrecedence ] := ^( DIV ) 
+[ booleanExpression ] := #( BE  [ booleanExpression ]  [ logicalOp ]  [ booleanExpression ] ) 
+[ booleanExpression ] := #( BEN  [ booleanExpression ] ) 
+[ booleanExpression ] := #( BE3  [ constrainedVars ]  [ relationalOp ]  [ constrainedVars ] ) 
+[ constrainedVars ] := ^( ID  ID.ent ) 
+[ constrainedVars ] := ^( NUM  NUM.val ) 
+[ constrainedVars ] := ^( RNUM  RNUM.val ) 
+[ var ] := #( IM , ^( ID  ID.ent ) [matrixElement] ) 
+[ var ] := ^( NUM  NUM.val ) 
+[ var ] := ^( RNUM  RNUM.val ) 
+[ var ] := %( [ matrixElement ] ) 
+[ var ] := ^( STR  STR.val ) 
+[ var ] := %( [ matrix ] ) 
+[ matrix ] := #( MT  [ rows ] ) 
+[ rows ] := #( RWS  [ row ]  [ rowsRemaining ] ) 
+[ rowsRemaining ] := #( RR  [ rows ] ) 
+[ rowsRemaining ] := ? 
+[ row ] := #( RW  ^( NUM  NUM.val )  [ remainingColElements ] ) 
+[ remainingColElements ] := #( RCE  ^( NUM  NUM.val )  [ remainingColElements ] ) 
+[ remainingColElements ] := ? 
+[ matrixElement ] := #( MEX  ^( ID  ID.ent )  ^( NUM  NUM.val )  ^( NUM  NUM.val ) ) 
+[ logicalOp ] := ^( AND ) 
+[ logicalOp ] := ^( OR ) 
+[ relationalOp ] := ^( LT ) 
+[ relationalOp ] := ^( LE ) 
+[ relationalOp ] := ^( EQ ) 
+[ relationalOp ] := ^( GT ) 
+[ relationalOp ] := ^( GE ) 
+[ relationalOp ] := ^( NE ) 
+
+
+
+
+
+///////////////remove//////////////////////
+# -make node
+% -default. none.
+? -NULL
+^ -new leaf

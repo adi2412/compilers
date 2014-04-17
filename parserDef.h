@@ -69,13 +69,46 @@ typedef enum nonTermValue
 	invalidNonTerm
 } nonTerminal;
 
+/*
+typedef enum _leafName
+{
+	FUNID,
+	ID,
+	NUM,
+	RNUM,
+	STR,
+	INT,
+	REAL,
+	STRING,
+	MATRIX,
+	PLUS,
+	MINUS,
+	MUL,
+	DIV,
+	AND,
+	OR,
+	LT,
+	LE,
+	EQ,
+	GT,
+	GE,
+	NE 
+} leafName;
+*/
+
+
 typedef enum isNonTerm
 {
 	FALSE, TRUE
 } isNonTerminal;
 
-typedef enum isNonTerm hasEmpty;
+typedef enum _choice
+{
+	MAKENODE,LEAF,DIRECT
+}choice;
 
+typedef enum isNonTerm hasEmpty;
+typedef enum isNonTerm flag;
 typedef enum isNonTerm isNullable;
 
 
@@ -134,6 +167,26 @@ struct _termSet
 	hasEmpty nullable;
 };
 
+//---------------------------
+
+
+typedef struct _sem
+{
+	flag isLeaf;
+	token leafName;
+	char* leafValue; //ID.entry, or NUM/RNUM/STR.val
+	nonTerminal nontermValue;
+} sem;
+
+
+typedef struct _semset *sems;
+
+struct _semset
+{
+	sem sem_value;
+	sems nextSem;
+};
+
 
 /*
 // The structure for the grammar rule.
@@ -154,5 +207,30 @@ struct _rule
 	hasEmpty nullable;
 	rule nextRule;
 };
+
+
+//read the file, store each NT with its semantc expansion: 
+//	~ASTnodename,
+//	~new leaves list (leaves are of ID, Num,rnumstr type, each has val or num style predefined)
+//	~RHS: make node? 
+//	~RHS: child NTs
+//	
+
+typedef struct _semrule *semrule;
+typedef struct _semrule **semRuleArray;
+
+typedef semrule semantics;
+
+struct _semrule
+{
+	int ruleNum;
+	choice isMakeNode_Leaf_Direct;
+	nonTerminal nonterm_value; //LHS
+	sems semanticsSet;	//RHS.nonterms or leaf.
+	//hasEmpty nullable;	//if ===NULL
+	//semrule nextRule;
+	//char* nodename //maybe reqd later.AST nodename
+};
+
 
 #endif
