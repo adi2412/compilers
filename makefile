@@ -1,10 +1,10 @@
 # temporary make file. will be improved
 
 all:
-	gcc -c lexer.c
-	gcc -c first_follow_gen.c
-	gcc -c driver.c
-	gcc -c parser.c
+	gcc -c -std=c99 lexer.c
+	gcc -c -std=c99 first_follow_gen.c
+	gcc -c -std=c99 driver.c
+	gcc -c -std=c99 parser.c
 	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o
 
 run:

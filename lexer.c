@@ -42,18 +42,20 @@ FILE *getStream(FILE *fp, buffer B, buffersize k)
 	if(fgets(B->buff, k, fp) == NULL)
 	{
 		// No more lines found.
-		free(B);
-		free(B->nextBuffer);
+		B = NULL;
 		return NULL;
 	}
 	//printf("%p, --> %p",B, B->nextBuffer);
 	// set the character number to the value from the previous buffer
-	B->nextBuffer->curPointer = 0;
-	B->nextBuffer->fwdPointer = 0;
-	B->charNumber = B->nextBuffer->charNumber;
-	B->lineNumber = B->nextBuffer->lineNumber;
-	curBuff = B;
-	return fp;
+	else
+	{
+		B->nextBuffer->curPointer = 0;
+		B->nextBuffer->fwdPointer = 0;
+		B->charNumber = B->nextBuffer->charNumber;
+		B->lineNumber = B->nextBuffer->lineNumber;
+		curBuff = B;
+		return fp;
+	}
 	// and we're done :/
 }
 
@@ -71,9 +73,9 @@ tokenInfo getEndCommentAndNextToken(FILE *fp, buffer B)
 	{
 		// The comment has ended. Get the next token and return it.
 		++B->lineNumber;
-		getStream(fp, B->nextBuffer, BUFFERSIZE);
+		FILE* blah = getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
-		if(B->nextBuffer == NULL)
+		if(blah == NULL || B->nextBuffer == NULL)
 		{
 			return NULL;
 		}
@@ -84,9 +86,9 @@ tokenInfo getEndCommentAndNextToken(FILE *fp, buffer B)
 	if(B->fwdPointer >= BUFFERSIZE)
 	{
 		// The comment has overflowed to next buffer. Finish reading comment and return the next token.
-		getStream(fp, B->nextBuffer, BUFFERSIZE);
+		FILE* blah = getStream(fp, B->nextBuffer, BUFFERSIZE);
 		// Set current buffer to next buffer
-		if(B->nextBuffer == NULL)
+		if(blah == NULL || B->nextBuffer == NULL)
 		{
 			return NULL;
 		}
@@ -107,7 +109,7 @@ char* joinStrings(char* alp, char* str)
 	{
 		alp[i] = str[i-1];
 	}
-	alp[i] = '\0';
+	//alp[i] = '\0';
 	return alp;
 }
 
@@ -141,7 +143,7 @@ tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 	{
 		// Function name ended on previous token.
 		free(funToken);
-		free(alphabet);
+		//free(alphabet);
 		return NULL;
 	}
 	else
@@ -153,14 +155,14 @@ tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 		{
 			funToken->token_value = alphabet;
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return funToken;
 		}
 		else
 		{
 			funToken->token_value = joinStrings(alphabet,nextToken->token_value);
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return funToken;
 		}
 	}
@@ -195,7 +197,7 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 	{
 		// Function name ended on previous token.
 		free(idToken);
-		free(alphabet);
+		//free(alphabet);
 		return NULL;
 	}
 	else
@@ -206,7 +208,7 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 		{
 			// Last letter of the alphabet. Return it right now.
 			idToken->token_value = alphabet;
-			free(alphabet);
+			//free(alphabet);
 			return idToken;
 		}
 		tokenInfo nextToken = getIDToken(fp, B, --i);
@@ -214,14 +216,14 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 		{
 			idToken->token_value = alphabet;
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return idToken;
 		}
 		else
 		{
 			idToken->token_value = joinStrings(alphabet,nextToken->token_value);
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return idToken;
 		}
 	}
@@ -256,7 +258,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 	{
 		// Not an alphabet. End here.
 		free(stringToken);
-		free(alphabet);
+		//free(alphabet);
 		return NULL;
 	}
 	else
@@ -268,7 +270,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 		{
 			stringToken->token_value = alphabet;
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return stringToken;
 		}
 		else
@@ -277,7 +279,7 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 			//printf("%s",stringToken->token_value);
 			//printf("%c",alphabet[0]);
 			free(nextToken);
-			free(alphabet);
+			//free(alphabet);
 			return stringToken;
 		}
 	}
@@ -330,7 +332,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		{	//it is obv upto maxDecimalPlace only by code design
 			numToken->token_name = RNUM;
 			numToken->token_value = alphabet; //CONSIDER:this will need atof conversion later.
-			free(alphabet);
+			//free(alphabet);
 			return numToken;
 		}
 		//CONSIDER:clean this commented mess up.
@@ -347,7 +349,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		{	//eg 24.5 is invalid, need 24.50 
 			showError();
 			free(numToken);
-			free(alphabet);
+			//free(alphabet);
 			return NULL;
 		}
 	}
@@ -355,7 +357,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 	{	//non numeric and non-period character found, return token
 		numToken->token_value = alphabet; //this will need atoi conversion later.
 		numToken->token_name = NUM;
-		free(alphabet);
+		//free(alphabet);
 		return numToken;	//CONSIDER: the fwdPointer has increasd. handle that?
 	}
 	return NULL;
@@ -951,9 +953,9 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			++B->lineNumber;
 			B->charNumber = 0;
 			// Change the buffer.
-			getStream(fp, B->nextBuffer, BUFFERSIZE);
+			FILE* check = getStream(fp, B->nextBuffer, BUFFERSIZE);
 			// Set current buffer to next buffer
-			if(B->nextBuffer == NULL)
+			if(check == NULL)
 			{
 				return NULL;
 			}
@@ -982,6 +984,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// Don't know what type of cases come here. CONSIDER
+			return NULL;
 		}
 	}
 	return NULL;
@@ -1096,6 +1099,7 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	}
 	while(curBuff->buff[curBuff->curPointer] != EOF)
 	{
+		printf("%c\n",curBuff->buff[curBuff->curPointer]);
 		tokenInfo nextTokens = getNextToken(source, curBuff);
 		if(nextTokens == NULL)
 		{
@@ -1121,6 +1125,7 @@ tokenInfo lexer(FILE *source, FILE* dest)
 				printf("(%s) ",nextTokens->token_value);
 			}
 			tokens = tokens->nextToken;
+			printf("Going for next token through while loop\n");
 			tokens->nextToken = NULL;
 		}
 	}
