@@ -8,5 +8,6 @@ first computeFirst(rule gramRule, nonterm head);
 follow computeFollow(rule gramRule, nonterm head);
 nonterm initialiseNonTerminals();
 char* getNonTermValue(nonTerminal nonterm);
-
+int getNonTerminal(char* term);
+token getToken(char* term);
 #endif

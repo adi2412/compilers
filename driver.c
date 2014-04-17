@@ -15,6 +15,7 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
 
 int main(int argc,char* argv[])
 {
@@ -100,5 +101,8 @@ int main(int argc,char* argv[])
 		fclose(destination);
 		
 		printf("Program successfully tokenized and created first and follow sets\n");
+
+		semRuleArray  sra = returnSemanticRules();
+
 	}
 }

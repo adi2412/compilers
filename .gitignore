@@ -11,3 +11,5 @@ ffg
 *.txt
 */*
 stage1exe
+.fuse_hidden*
+*.*~
