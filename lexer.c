@@ -109,7 +109,7 @@ char* joinStrings(char* alp, char* str)
 	{
 		alp[i] = str[i-1];
 	}
-	//alp[i] = '\0';
+	alp[i] = '\0';
 	return alp;
 }
 
@@ -1099,7 +1099,6 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	}
 	while(curBuff->buff[curBuff->curPointer] != EOF)
 	{
-		printf("%c\n",curBuff->buff[curBuff->curPointer]);
 		tokenInfo nextTokens = getNextToken(source, curBuff);
 		if(nextTokens == NULL)
 		{
@@ -1125,7 +1124,6 @@ tokenInfo lexer(FILE *source, FILE* dest)
 				printf("(%s) ",nextTokens->token_value);
 			}
 			tokens = tokens->nextToken;
-			printf("Going for next token through while loop\n");
 			tokens->nextToken = NULL;
 		}
 	}
