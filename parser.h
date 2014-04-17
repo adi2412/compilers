@@ -24,12 +24,21 @@ typedef struct _data
 
 typedef struct _tree *tree;
 
+typedef struct _termData
+{
+	isNonTerminal flag;
+	token tokValue;
+	char* token_data;
+	nonTerminal nontermValue;
+} termData;
+
 struct _tree
 {
 	tree sisterNode;
 	tree parentNode;
 	tree childNode; // Points to the leftmost child
-	terminal element;
+	termData element;
+	int ruleNum;
 };
 
 int parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);

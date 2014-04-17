@@ -1,3 +1,12 @@
+/* Compilers Project Group 2
+// Aditya Raisinghani 2011A7PS042P
+// Utkarsh Verma 2011A7PS137P
+// BITS Pilani, Pilani Campus
+// Second semester 2014
+*/
+
+// Contains functions for parsing
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -103,11 +112,13 @@ void createTree()
 	treeNode->sisterNode = NULL;
 	treeNode->parentNode = NULL;
 	treeNode->childNode = NULL;
+	treeNode->ruleNum = 0;
 	// Create root with start symbol.
 
-	terminal element;
+	termData element;
 	element.nontermValue = mainFunction;
 	element.tokValue = INVALID;
+	element.token_data = "";
 	element.flag = TRUE;
 
 	treeNode->element = element;
@@ -159,8 +170,18 @@ void pushItems(terminals terms)
 
 /*************** Tree functions *******************/
 
-void goToNextNode()
+void goToNextNode(tokenInfo token)
 {
+	if(currentNode->element.tokValue == token->token_name)
+	{
+		printf("Add data to the node\n");
+		if(token->token_name == ID || token->token_name == STR || token->token_name == FUNID)
+			currentNode->element.token_data = token->token_value;
+	}
+	else
+	{
+		printf("Data not being added\n");
+	}
 	tree sister = currentNode->sisterNode;
 	tree parent = currentNode->parentNode;
 	while(sister == NULL)
@@ -181,7 +202,7 @@ void goToNextNode()
 	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
 	{
 		currentNode = sister;
-		goToNextNode();
+		goToNextNode(token);
 	}
 	else
 	{
@@ -189,14 +210,29 @@ void goToNextNode()
 	}
 }
 
-void addChildNodes(terminals terms)
+void addChildNodes(rule rule)
 {
+	nonTerminal LHSTerm = rule->nonterm_value;
+	if(LHSTerm == currentNode->element.nontermValue)
+	{
+		printf("adding rule number to parse tree\n");
+		currentNode->ruleNum = rule->ruleNum;
+	}
+	else
+		printf("not adding rule numbers\n");
 	printf("before adding children, current node is: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
 	tree treeNode = malloc(sizeof(struct _tree));
 	treeNode->parentNode = currentNode;
 	treeNode->childNode = NULL;
 	treeNode->sisterNode = NULL;
-	treeNode->element = terms->term_value;
+	treeNode->ruleNum = 0;
+	terminals terms = rule->termSet;
+	termData term;
+	term.flag = terms->term_value.flag;
+	term.nontermValue = terms->term_value.nontermValue;
+	term.tokValue = terms->term_value.tokValue;
+	term.token_data = "";
+	treeNode->element = term;
 	currentNode->childNode = treeNode;
 	terms = terms->nextTerm;
 	tree prevNode = treeNode;
@@ -207,7 +243,13 @@ void addChildNodes(terminals terms)
 		prevNode->sisterNode = newNode;
 		newNode->childNode = NULL;
 		newNode->sisterNode = NULL;
-		newNode->element = terms->term_value;
+		newNode->ruleNum = 0;
+		termData term;
+		term.flag = terms->term_value.flag;
+		term.nontermValue = terms->term_value.nontermValue;
+		term.tokValue = terms->term_value.tokValue;
+		term.token_data = "";
+		newNode->element = term;
 		printf("Adding sister node %d(%d)\n",newNode->element.tokValue,newNode->element.nontermValue);
 		prevNode = newNode;
 		terms = terms->nextTerm;
@@ -247,7 +289,7 @@ int printTree(tree node)
 		fprintf(stderr,"Starting to print\n");
 		if(node->element.flag)
 		{
-			fprintf(stderr,"Node: %s\n",getNonTermValue(node->element.nontermValue));
+			fprintf(stderr,"Node: %s(%d)\n",getNonTermValue(node->element.nontermValue),node->ruleNum);
 			tree childNode = node->childNode;
 			if(childNode == NULL)
 			{
@@ -277,7 +319,10 @@ int printTree(tree node)
 		else
 		{
 			// Terminal.
-			fprintf(stderr,"Leaf Node: %s\n", getTokenName(node->element.tokValue));
+			fprintf(stderr,"Leaf Node: %s", getTokenName(node->element.tokValue));
+			if(node->element.tokValue == ID || node->element.tokValue == STR || node->element.tokValue == FUNID)
+				fprintf(stderr,"(%s)",node->element.token_data);
+			fprintf(stderr,"\n");
 			if(node->sisterNode != NULL)
 			{
 				printTree(node->sisterNode);
@@ -337,7 +382,7 @@ int parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			{
 				pop();
 				printf("Popping %d\n", head->element.tokValue);
-				goToNextNode();
+				goToNextNode(readToken);
 				readToken = readToken->nextToken;
 			}
 			else
@@ -364,7 +409,7 @@ int parse(nonterm nts, tokenInfo toks, grammar hdRule)
 				rule correctRule = findRule(ruleNumber, headRule);
 				pop();
 				pushItems(correctRule->termSet);
-				addChildNodes(correctRule->termSet);
+				addChildNodes(correctRule);
 				// goToNextNode();
 			}
 		}
