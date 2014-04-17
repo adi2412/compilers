@@ -5,7 +5,9 @@ all:
 	gcc -c -std=c99 first_follow_gen.c
 	gcc -c -std=c99 driver.c
 	gcc -c -std=c99 parser.c
-	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o
+	gcc -c -std=c99 sem_parser.c 
+	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o sem_parser.o
+
 
 run:
 	./stage1exe test.txt parsetreeOutFile.txt

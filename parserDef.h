@@ -93,8 +93,7 @@ typedef enum _leafName
 	GT,
 	GE,
 	NE 
-} leafName;
-*/ //using token enum instead
+} leafName;*/
 
 
 typedef enum isNonTerm
@@ -184,7 +183,6 @@ struct _semset
 	sem sem_value;
 	sems nextSem;
 };
-
 /*
 // The structure for the grammar rule.
 // nonTerminal: Enumeration of non terminals(LHS of the rule).
@@ -226,7 +224,8 @@ struct _semrule
 	nonTerminal nonterm_value; //LHS
 	sems semanticsSet;	//RHS.nonterms or leaf.
 	//hasEmpty nullable;	//if ===NULL
-	semrule nextRule;
+	//semrule nextRule;
+	//char* nodename //maybe reqd later.AST nodename
 };
 
 

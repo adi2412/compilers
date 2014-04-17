@@ -24,3 +24,13 @@ To Do
 We intend to follow some good Git branching models like [this one](http://nvie.com/posts/a-successful-git-branching-model/) as a part of this project.
 
 Interface Requirements that need to be followed can be seen [here](http://csis.bits-pilani.ac.in/faculty/vandana/compilers_14/compiler%20project/stage1/interfacerequirements.htm).
+
+
+####Semantic Rules legend
+# -make node
+
+% -direct. none.
+
+? -NULL
+
+^ -new leaf
