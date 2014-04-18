@@ -34,22 +34,27 @@ void initialiseSymbolTable()
 	currentEntry = malloc(sizeof(struct _STable));
 	currentEntry->nextEntry = NULL;
 	currentEntry->data = NULL;
-	stList->table = currentEntry;
+	// stList->table = currentEntry;
+	headEntry = currentEntry;
+	stList->table = headEntry;
 	// currentEntry = headEntry;
 	// currentEntry->nextEntry = malloc(sizeof(struct _STable));
 	headList = stList;
 }
 
-void addToCurrentSymbolTable(astTree data, token type)
+void addToCurrentSymbolTable(astTree data, token type,int idType)
 {
 	currentEntry->scope = curScope;
 	currentEntry->offset = 0;
+	fprintf(stderr, "Upto here\n");
 	currentEntry->lineNumber = data->data.lineNumber;
 	currentEntry->charNumber = data->data.charNumber;
+	currentEntry->type = idType;
 	currentEntry->data = malloc(sizeof(struct _identifier));
 	currentEntry->data->symbol = data->data.tokValue; // Is there a need for this?
 	currentEntry->data->value = data->data.token_data;
 	printf("Adding data: %s\n",currentEntry->data->value);
+	printf("In the list head: %s\n",stList->table->data->value);
 	currentEntry->data->type = type;
 	currentEntry->nextEntry = malloc(sizeof(struct _STable));
 	currentEntry = currentEntry->nextEntry;
@@ -68,7 +73,7 @@ void findIdentifiers()
 	while(varNodes != NULL)
 	{
 		astTree dataNode = varNodes->childNode;
-		addToCurrentSymbolTable(dataNode,type);
+		addToCurrentSymbolTable(dataNode,type,0);
 		varNodes = varNodes->childNode->sisterNode;
 		if(varNodes->ruleNum == 24)
 		{
@@ -82,6 +87,33 @@ void findIdentifiers()
 	}
 	currentASTNode = currentASTNode->parentNode;
 	fprintf(stderr, "Leaving find Identifier, number is %d\n", currentASTNode->element.nontermValue);
+	return;
+}
+
+void findParameters(int idType)
+{
+	currentASTNode = currentASTNode->childNode;
+	fprintf(stderr, "At find parameters, number is %d\n", currentASTNode->element.nontermValue);
+	astTree typeNode = currentASTNode->childNode;
+	sem typeValue = typeNode->element;
+	token type = typeValue.leafName;
+	astTree varNodes = currentASTNode->sisterNode;
+	astTree dataNode = varNodes;
+	fprintf(stderr,"%d\n",dataNode->ruleNum);
+	addToCurrentSymbolTable(dataNode,type,idType);
+	varNodes = varNodes->sisterNode;
+	while(varNodes->ruleNum != 20)
+	{
+		typeNode = varNodes->childNode->childNode;
+		typeValue = typeNode->element;
+		type = typeValue.leafName;
+		varNodes = typeNode->sisterNode;
+		dataNode = varNodes;
+		addToCurrentSymbolTable(dataNode,type,idType);
+		varNodes = varNodes->sisterNode;
+	}
+	currentASTNode = currentASTNode->parentNode;
+	fprintf(stderr, "Leaving find parameters, number is %d\n", currentASTNode->element.nontermValue);
 	return;
 }
 
@@ -192,10 +224,11 @@ void addSymbolTableForFunctionToList()
 	fprintf(stderr,"%d\n",currentASTNode->element.nontermValue);
 	currentASTNode = currentASTNode->childNode;
 	// TODO: Add the return identifiers to the symbol table.
-
+	findParameters(2);
 	// TODO: Add the parameters to the symbol table.
 	fprintf(stderr,"%d\n",currentASTNode->element.nontermValue);
 	currentASTNode = currentASTNode->sisterNode->sisterNode;
+	findParameters(1);
 	fprintf(stderr,"Fine till here\n");
 	// Go into the function and find the variables.
 	currentASTNode = currentASTNode->sisterNode->childNode;
@@ -404,7 +437,22 @@ void printSymbolTable()
 {
 	STList readList = headList;
 	printf("\n\n");
-	printf("%d %s",readList->table->data->symbol,readList->table->data->value);
+	printf("Printing all the symbols\n");
+	while(readList != NULL)
+	{
+		STable entry = readList->table;
+		while(entry->data != NULL)
+		{
+			printf("%s, scope: %d, type: %d\n",entry->data->value,entry->scope,entry->type);
+			entry = entry->nextEntry;
+		}
+		printf("Going to child table\n");
+		if(readList->childList != NULL)
+			readList = readList->childList;
+		else
+			return;
+	}
+	
 }
 
 int generateSymbolTables(astTree astRoot)

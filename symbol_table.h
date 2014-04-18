@@ -8,6 +8,8 @@ typedef struct _STable *STable;
 
 typedef struct _identifier *identifier;
 
+typedef enum {VAR,PARA,RETURN} idType;
+
 struct _STList
 {
 	STList parentList;
@@ -24,6 +26,7 @@ struct _STable
 	int offset;
 	int lineNumber;
 	int charNumber;
+	idType type;
 	// int scopeIdentifier; // Not sure if neeeded
 };
 
