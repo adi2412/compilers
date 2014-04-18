@@ -7,7 +7,8 @@ all:
 	gcc -c -std=c99 parser.c
 	gcc -c -std=c99 sem_parser.c 
 	gcc -c -std=c99 ast.c 
-	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o sem_parser.o ast.o
+	gcc -c -std=c99 symbol_table.c
+	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o sem_parser.o ast.o symbol_table.o
 
 
 run:

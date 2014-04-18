@@ -5,8 +5,8 @@
 [ stmtsAndFunctionDefs_type1 ] := %( [ stmtsAndFunctionDefs ] ) 
 [ stmtsAndFunctionDefs_type1 ] := ? 
 [ stmt ] := %( [ declarationStmt ] ) 
-[ stmt ] := %( [ assignmentStmt_type1 ] )
-[ stmt ] := %( [ assignmentStmt_type2 ] )
+[ stmt ] := %( [ assignmentStmt_type1 ] ) 
+[ stmt ] := %( [ assignmentStmt_type2 ] ) 
 [ stmt ] := %( [ ifStmt ] ) 
 [ stmt ] := %( [ ioStmt ] ) 
 [ stmt ] := %( [ funCallStmt ] ) 

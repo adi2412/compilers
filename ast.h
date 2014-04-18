@@ -5,4 +5,4 @@
 // Second semester 2014
 */
 
-int ast(semRuleArray headRule, tree root);
+astTree ast(semRuleArray headRule, tree root);

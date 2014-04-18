@@ -17,6 +17,7 @@
 #include "parser.h"
 #include "sem_parser.h"
 #include "ast.h"
+#include "symbol_table.h"
 
 int main(int argc,char* argv[])
 {
@@ -104,6 +105,7 @@ int main(int argc,char* argv[])
 		printf("Program successfully tokenized and created first and follow sets\n");
 
 		semRuleArray  sra = returnSemanticRules();
-		ast(sra, root);
+		astTree astRoot = ast(sra, root);
+		generateSymbolTables(astRoot);
 	}
 }

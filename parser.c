@@ -420,6 +420,11 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			if(head->element.tokValue == readToken->token_name)
 			{
 				pop();
+				if(readToken->token_name == currentNode->element.tokValue)
+				{
+					currentNode->element.lineNumber = readToken->lineNumber;
+					currentNode->element.charNumber = readToken->charNumber;
+				}
 				printf("Popping %d\n", head->element.tokValue);
 				goToNextNode(readToken);
 				readToken = readToken->nextToken;

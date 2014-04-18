@@ -30,6 +30,8 @@ typedef struct _termData
 	token tokValue;
 	char* token_data;
 	nonTerminal nontermValue;
+	int charNumber;
+	int lineNumber;
 } termData;
 
 struct _tree
@@ -53,6 +55,7 @@ struct _astTree
 	// char* name;
 	int ruleNum;
 	astData element;
+	termData data;
 };
 
 tree parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
