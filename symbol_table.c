@@ -30,7 +30,7 @@ void initialiseSymbolTable()
 	stList->parentList = NULL;
 	stList->sisterList = NULL;
 	stList->childList = NULL;
-	stList->identifiers = scopeIdentifier;
+	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry;
 	currentEntry = malloc(sizeof(struct _STable));
 	currentEntry->nextEntry = NULL;
@@ -51,6 +51,7 @@ void addToCurrentSymbolTable(astTree data, token type,int idType)
 	currentEntry->lineNumber = data->data.lineNumber;
 	currentEntry->charNumber = data->data.charNumber;
 	currentEntry->type = idType;
+	currentEntry->scopeIdentifier = scopeIdentifier; //the identifier value.
 	currentEntry->data = malloc(sizeof(struct _identifier));
 	currentEntry->data->symbol = data->data.tokValue; // Is there a need for this?
 	currentEntry->data->value = data->data.token_data;
@@ -133,7 +134,7 @@ void addSymbolTableToList()
 		stList->parentList = parentList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
-		stList->identifier = scopeIdentifier;
+		stList->scopeIdentifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -151,7 +152,7 @@ void addSymbolTableToList()
 		stList = stList->childList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
-		stList->identifier = scopeIdentifier;
+		stList->scopeIdentifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -186,7 +187,7 @@ void addSymbolTableForElsePartToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
-	stList->identifier = scopeIdentifier;
+	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
 	headEntry->nextEntry = NULL;
@@ -220,7 +221,7 @@ void addSymbolTableForFunctionToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
-	stList->identifier = scopeIdentifier;
+	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
 	headEntry->nextEntry = NULL;
@@ -255,7 +256,13 @@ void addSymbolTableForFunctionToList()
 
 void popSymbolTable()
 {
+	if(stList->parentList == NULL)
+		return;
 	stList = stList->parentList;
+	STable entry = stList->table;
+	while(entry->data != NULL)
+		entry = entry->nextEntry;
+	currentEntry = entry;
 	curScope--;
 }
 
@@ -445,10 +452,11 @@ void printSymbolTable()
 	printf("Printing all the symbols\n");
 	while(readList != NULL)
 	{
+		printf("%d\n",readList->scopeIdentifier);
 		STable entry = readList->table;
 		while(entry->data != NULL)
 		{
-			printf("%s, scope: %d, type: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->data->type);
+			printf("%s, scope: %d, type: %d, lineNumber: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber,entry->data->type);
 			entry = entry->nextEntry;
 		}
 		printf("Going to child table\n");
@@ -460,7 +468,7 @@ void printSymbolTable()
 	
 }
 
-int generateSymbolTables(astTree astRoot)
+STList generateSymbolTables(astTree astRoot)
 {
 	stList = malloc(sizeof(struct _STList));
 	curScope = 0;
@@ -471,5 +479,5 @@ int generateSymbolTables(astTree astRoot)
 	currentASTNode = currentASTNode->childNode->childNode; // stmtOrFunctionDef rule.
 	checkNextStatementAndRead();
 	printSymbolTable();
-	return 0;
+	return headList;
 }

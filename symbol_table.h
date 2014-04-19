@@ -16,7 +16,7 @@ struct _STList
 	STList sisterList;
 	STList childList;
 	STable table;
-	int identifier;
+	int scopeIdentifier;
 };
 
 struct _STable
@@ -28,7 +28,7 @@ struct _STable
 	int lineNumber;
 	int charNumber;
 	idType type;
-	// int scopeIdentifier; // Not sure if neeeded
+	int scopeIdentifier; // Not sure if neeeded
 };
 
 struct _identifier
@@ -40,6 +40,6 @@ struct _identifier
 
 void checkNextStatementAndRead();
 void createSymbolTables();
-int generateSymbolTables(astTree astRoot);
+STList generateSymbolTables(astTree astRoot);
 
 #endif

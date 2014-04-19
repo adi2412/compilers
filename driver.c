@@ -18,6 +18,7 @@
 #include "sem_parser.h"
 #include "ast.h"
 #include "symbol_table.h"
+#include "type_extractor.h"
 
 int main(int argc,char* argv[])
 {
@@ -106,6 +107,8 @@ int main(int argc,char* argv[])
 
 		semRuleArray  sra = returnSemanticRules();
 		astTree astRoot = ast(sra, root);
-		generateSymbolTables(astRoot);
+		STList headList = generateSymbolTables(astRoot);
+		typeChecker(astRoot, headList);
 	}
+	return 0;
 }

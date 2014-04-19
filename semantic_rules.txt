@@ -74,7 +74,7 @@
 [ row ] := #( RW ^( NUM NUM.val ) [ remainingColElements ] ) 
 [ remainingColElements ] := #( RCE ^( NUM NUM.val ) [ remainingColElements ] ) 
 [ remainingColElements ] := ? 
-[ matrixElement ] := #( MEX ^( ID ID.ent ) ^( NUM NUM.val ) ^( NUM NUM.val ) ) 
+[ matrixElement ] := #( MEX ^( NUM NUM.val ) ^( NUM NUM.val ) ) 
 [ matrixElement ] := ? 
 [ logicalOp ] := ^( AND ) 
 [ logicalOp ] := ^( OR ) 
