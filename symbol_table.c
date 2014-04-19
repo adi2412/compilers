@@ -50,6 +50,7 @@ void addToCurrentSymbolTable(astTree data, token type,int idType)
 	currentEntry->lineNumber = data->data.lineNumber;
 	currentEntry->charNumber = data->data.charNumber;
 	currentEntry->type = idType;
+	currentEntry->scopeIdentifier = scopeIdentifier; //the identifier value.
 	currentEntry->data = malloc(sizeof(struct _identifier));
 	currentEntry->data->symbol = data->data.tokValue; // Is there a need for this?
 	currentEntry->data->value = data->data.token_data;
@@ -443,7 +444,7 @@ void printSymbolTable()
 		STable entry = readList->table;
 		while(entry->data != NULL)
 		{
-			printf("%s, scope: %d, type: %d\n",entry->data->value,entry->scope,entry->type);
+			printf("%s, scope: %d, type: %d, lineNumber : %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber);
 			entry = entry->nextEntry;
 		}
 		printf("Going to child table\n");

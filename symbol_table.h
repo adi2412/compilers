@@ -27,7 +27,7 @@ struct _STable
 	int lineNumber;
 	int charNumber;
 	idType type;
-	// int scopeIdentifier; // Not sure if neeeded
+	int scopeIdentifier; // Not sure if neeeded
 };
 
 struct _identifier
