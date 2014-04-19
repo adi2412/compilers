@@ -16,6 +16,7 @@ struct _STList
 	STList sisterList;
 	STList childList;
 	STable table;
+	int identifier;
 };
 
 struct _STable

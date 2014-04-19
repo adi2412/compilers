@@ -30,6 +30,7 @@ void initialiseSymbolTable()
 	stList->parentList = NULL;
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	stList->identifiers = scopeIdentifier;
 	STable headEntry;
 	currentEntry = malloc(sizeof(struct _STable));
 	currentEntry->nextEntry = NULL;
@@ -67,7 +68,7 @@ void findIdentifiers()
 	currentASTNode = currentASTNode->childNode;
 	fprintf(stderr, "At find Identifier, number is %d\n", currentASTNode->element.nontermValue);
 	astTree typeNode = currentASTNode->childNode;
-	sem typeValue = typeNode->element;
+	sem typeValue = typeNode->childNode->element;
 	token type = typeValue.leafName;
 	astTree varNodes = typeNode->sisterNode;
 	while(varNodes != NULL)
@@ -105,7 +106,7 @@ void findParameters(int idType)
 	while(varNodes->ruleNum != 20)
 	{
 		typeNode = varNodes->childNode->childNode;
-		typeValue = typeNode->element;
+		typeValue = typeNode->childNode->element;
 		type = typeValue.leafName;
 		varNodes = typeNode->sisterNode;
 		dataNode = varNodes;
@@ -132,6 +133,7 @@ void addSymbolTableToList()
 		stList->parentList = parentList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
+		stList->identifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -149,6 +151,7 @@ void addSymbolTableToList()
 		stList = stList->childList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
+		stList->identifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -183,6 +186,7 @@ void addSymbolTableForElsePartToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	stList->identifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
 	headEntry->nextEntry = NULL;
@@ -216,6 +220,7 @@ void addSymbolTableForFunctionToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	stList->identifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
 	headEntry->nextEntry = NULL;
@@ -443,7 +448,7 @@ void printSymbolTable()
 		STable entry = readList->table;
 		while(entry->data != NULL)
 		{
-			printf("%s, scope: %d, type: %d\n",entry->data->value,entry->scope,entry->type);
+			printf("%s, scope: %d, type: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->data->type);
 			entry = entry->nextEntry;
 		}
 		printf("Going to child table\n");
