@@ -19,6 +19,7 @@
 #include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
+#include "semantic_analyzer.h"
 
 int main(int argc,char* argv[])
 {
@@ -109,6 +110,7 @@ int main(int argc,char* argv[])
 		astTree astRoot = ast(sra, root);
 		STList headList = generateSymbolTables(astRoot);
 		typeChecker(astRoot, headList);
+		semanticAnalyzer(astRoot, headList);
 	}
 	return 0;
 }

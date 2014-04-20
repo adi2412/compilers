@@ -16,11 +16,13 @@
 #include "first_follow_gen.h"
 #include "parser.h"
 #include "symbol_table.h"
+#include "type_extractor.h"
 
 astTree currentASTNode;
 STList stList;
 STList headList;
 STable currentEntry;
+matrixSizes currentMatrix;
 // STable headEntry;
 int curScope;
 int scopeIdentifier;
@@ -30,6 +32,9 @@ void initialiseSymbolTable()
 	stList->parentList = NULL;
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	stList->functionName = "main";
+	stList->startCharNumber = 0;
+	stList->startLineNumber = 0;
 	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry;
 	currentEntry = malloc(sizeof(struct _STable));
@@ -38,6 +43,11 @@ void initialiseSymbolTable()
 	// stList->table = currentEntry;
 	headEntry = currentEntry;
 	stList->table = headEntry;
+	currentMatrix = malloc(sizeof(struct _matrixSizes));
+	currentMatrix->nextEntry = NULL;
+	matrixSizes headMatrix;
+	headMatrix = currentMatrix;
+	stList->matrixTable = headMatrix;
 	// currentEntry = headEntry;
 	// currentEntry->nextEntry = malloc(sizeof(struct _STable));
 	headList = stList;
@@ -119,6 +129,69 @@ void findParameters(int idType)
 	return;
 }
 
+void findMatrixAssignment()
+{
+	astTree idNode = currentASTNode->childNode->childNode->childNode;
+	token type = checkTypeInSymbolTable(idNode->data.token_data);
+	if(type == MATRIX)
+	{
+		// It is a matrix.
+		astTree rhsNode = currentASTNode->childNode->childNode->sisterNode;
+		if(rhsNode->ruleNum == 29)
+		{
+			astTree matrixNode = rhsNode->childNode->childNode->childNode->childNode;
+			if(matrixNode->ruleNum == 69)
+			{
+				// It is a matrix assignment.
+				astTree rows = matrixNode->childNode->childNode;
+				int numRows = 0;
+				int numCols = -1;
+				int newCol = 0;
+				while(rows!= NULL)
+				{
+					numRows++;
+					astTree row = rows->childNode;
+					newCol = 0;
+					while(row!= NULL)
+					{
+						newCol++;
+						row = row->childNode->sisterNode;
+						if(row->ruleNum == 76)
+						{
+							row = NULL;
+						}
+					}
+					rows = rows->childNode->sisterNode;
+					if(rows->ruleNum == 73)
+					{
+						rows = NULL;
+					}
+					else
+					{
+						rows = rows->childNode;
+					}
+					if(newCol != numCols && numCols != -1)
+					{
+						// Rows have different number of columns.
+						fprintf(stderr,"Rows have different number of items\n");
+						exit(0);
+					}
+					else
+					{
+						numCols = newCol;
+					}
+				}
+				currentMatrix->matrixName = idNode->data.token_data;
+				currentMatrix->rows = numRows;
+				currentMatrix->columns = numCols;
+				currentMatrix->nextEntry = malloc(sizeof(struct _matrixSizes));
+				currentMatrix = currentMatrix->nextEntry;
+				currentMatrix->nextEntry = NULL;
+			}
+		}
+	}
+}
+
 void addSymbolTableToList()
 {
 	if(stList->childList != NULL)
@@ -134,12 +207,17 @@ void addSymbolTableToList()
 		stList->parentList = parentList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
+		stList->functionName = "if";
 		stList->scopeIdentifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
 		stList->table = headEntry;
 		currentEntry = headEntry;
+		matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
+		headMatrix->nextEntry = NULL;
+		stList->matrixTable = headMatrix;
+		currentMatrix = headMatrix;
 		// Go into the block and find the variables.
 		currentASTNode = currentASTNode->childNode->childNode->sisterNode; //stmt rule.
 		// createSymbolTables();
@@ -152,6 +230,10 @@ void addSymbolTableToList()
 		stList = stList->childList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
+		matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
+		headMatrix->nextEntry = NULL;
+		stList->matrixTable = headMatrix;
+		currentMatrix = headMatrix;
 		stList->scopeIdentifier = scopeIdentifier;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
@@ -187,6 +269,10 @@ void addSymbolTableForElsePartToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
+	headMatrix->nextEntry = NULL;
+	stList->matrixTable = headMatrix;
+	currentMatrix = headMatrix;
 	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
@@ -221,6 +307,10 @@ void addSymbolTableForFunctionToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
+	headMatrix->nextEntry = NULL;
+	stList->matrixTable = headMatrix;
+	currentMatrix = headMatrix;
 	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
@@ -231,9 +321,15 @@ void addSymbolTableForFunctionToList()
 	currentASTNode = currentASTNode->childNode;
 	// TODO: Add the return identifiers to the symbol table.
 	findParameters(2);
+	// Add the function name to the STList
+	currentASTNode = currentASTNode->sisterNode;
+	char* functionName = currentASTNode->data.token_data;
+	stList->functionName = functionName;
+	stList->startLineNumber = currentASTNode->data.lineNumber;
+	stList->startCharNumber = currentASTNode->data.charNumber;
 	// TODO: Add the parameters to the symbol table.
 	fprintf(stderr,"%d\n",currentASTNode->element.nontermValue);
-	currentASTNode = currentASTNode->sisterNode->sisterNode;
+	currentASTNode = currentASTNode->sisterNode;
 	findParameters(1);
 	fprintf(stderr,"Fine till here\n");
 	// Go into the function and find the variables.
@@ -287,6 +383,12 @@ void findNextStatement()
 	if(currentASTNode->ruleNum == 6)
 	{
 		// It is a nullable.
+		astTree tempNode = currentASTNode; // to find line and char numbers of end of block.
+		tempNode = tempNode->parentNode->childNode; // stmtOrFunctionDef.
+		while(tempNode->data.flag)
+			tempNode = tempNode->childNode;
+		stList->endLineNumber = tempNode->data.lineNumber;
+		stList->endCharNumber = tempNode->data.charNumber;
 		if(curScope == 0)
 		{
 			// We are in the main function scope and hence the end of the program. End here.
@@ -333,7 +435,7 @@ void checkNextStatementAndRead()
 			// It is a functionDef statement.
 			currentASTNode = currentASTNode->childNode;
 			goToNewFunctionScope();
-			popSymbolTable();
+			// popSymbolTable();
 			findNextStatement();
 		}
 	}
@@ -349,7 +451,7 @@ void createSymbolTablesForIfBlock()
 		switch(rule)
 		{
 			case 0: findIdentifiers(); // declaration statement.
-			case 1: break; // Assignment stmt type1
+			case 1: findMatrixAssignment();break; // Assignment stmt type1
 			case 2: break; // Assignment stmt type2
 			case 3: goToNewScope(); // if stmt
 			case 4: break; // IO Stmt.
@@ -392,7 +494,7 @@ void createSymbolTables()
 	switch(rule)
 	{
 		case 0: findIdentifiers();break; // declaration statement.
-		case 1: break; // Assignment stmt type1
+		case 1: findMatrixAssignment();break; // Assignment stmt type1
 		case 2: break; // Assignment stmt type2
 		case 3: goToNewScope();break; // if stmt
 		case 4: break; // IO Stmt.
@@ -452,12 +554,19 @@ void printSymbolTable()
 	printf("Printing all the symbols\n");
 	while(readList != NULL)
 	{
-		printf("%d\n",readList->scopeIdentifier);
+		printf("%s(%d) From %d to %d\n",readList->functionName,readList->scopeIdentifier,readList->startLineNumber,readList->endLineNumber);
 		STable entry = readList->table;
 		while(entry->data != NULL)
 		{
 			printf("%s, scope: %d, type: %d, lineNumber: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber,entry->data->type);
 			entry = entry->nextEntry;
+		}
+		printf("matrix sizes\n");
+		matrixSizes matrices = readList->matrixTable;
+		while(matrices->matrixName != NULL)
+		{
+			printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
+			matrices = matrices->nextEntry;
 		}
 		printf("Going to child table\n");
 		if(readList->childList != NULL)

@@ -50,6 +50,12 @@ token checkTypeInSymbolTable(char* name)
 		if(entry->data == NULL)
 		{
 			// All entries in current scope over. Check above scope.
+			if(stList->parentList == NULL)
+			{
+				typeError();
+				entry = NULL;
+				break;
+			}
 			entry = stList->parentList->table;
 		}
 	}
@@ -72,12 +78,50 @@ void checkSizeExpression(token type, astTree nodes)
 	}
 }
 
-void checkArithmeticExpression(token type, astTree nodes)
+matrixSizes findMatrixInMatrixTable(char* name, int flag)
+{
+	matrixSizes entry = stList->matrixTable;
+	while(strcmp(entry->matrixName,name))
+	{
+		entry = entry->nextEntry;
+		if(entry->matrixName == NULL)
+		{
+			// All matrices in current scope over. Check above.
+			if(stList->parentList == NULL)
+			{
+				if(flag)
+					typeError();
+				entry = NULL;
+				break;
+			}
+			entry = stList->parentList->matrixTable;
+		}
+	}
+	return entry;
+}
+
+void checkArithmeticExpression(char* idName, token type, astTree nodes)
 {
 	int flag = 0;
 	int lowPrecedenceOnly = 0; // For Strings and Matrix
 	token acceptedType = type;
 	astTree expression = nodes->childNode;
+	int acceptedRows = 0;
+	int acceptedCols = 0;
+	if(acceptedType == MATRIX)
+	{
+		// Find the size of the LHS matrix.
+		matrixSizes matrix = findMatrixInMatrixTable(idName,0);
+		if(matrix == NULL)
+		{
+			// The name wasn't found.
+		}
+		else
+		{
+			acceptedRows = matrix->rows;
+			acceptedCols = matrix->columns;
+		}
+	}
 	while(expression != NULL)
 	{
 		astTree termID = expression->childNode;
@@ -105,6 +149,7 @@ void checkArithmeticExpression(token type, astTree nodes)
 					else if(typeNode->childNode->sisterNode->ruleNum == 78)
 					{
 						token idNode = checkTypeInSymbolTable(typeNode->childNode->data.token_data);
+						// If it is an error, ignore this statement and move on after reporting the error.
 						if(acceptedType == RNUM)
 						{
 							if(idNode == NUM)
@@ -140,6 +185,24 @@ void checkArithmeticExpression(token type, astTree nodes)
 							}
 							else
 							{
+								// Check if their sizes match.
+								matrixSizes rhsMatrix = findMatrixInMatrixTable(typeNode->childNode->data.token_data,1);
+								if(rhsMatrix == NULL)
+								{
+									// Matrix hasn't been defined.
+									return;
+								}
+								if((acceptedRows != 0 && acceptedCols != 0) && (rhsMatrix->rows != acceptedRows || rhsMatrix->columns != acceptedCols))
+								{
+									// Sizes of matrix do not match.
+									typeError();
+									return;
+								}
+								else if(acceptedRows == 0 && acceptedCols == 0)
+								{
+									acceptedRows = rhsMatrix->rows;
+									acceptedCols = rhsMatrix->columns;
+								}
 								lowPrecedenceOnly = 1;
 							}
 						}
@@ -171,6 +234,10 @@ void checkArithmeticExpression(token type, astTree nodes)
 						lowPrecedenceOnly = 1;
 					}
 				}
+				else if(typeNode->ruleNum == 69)
+				{
+					// Matrix assignment.
+				}
 				else
 				{
 					// Some weird error.
@@ -181,7 +248,7 @@ void checkArithmeticExpression(token type, astTree nodes)
 			else
 			{
 				// rule no 53- factor -> (arithmeticExp)
-				checkArithmeticExpression(type,factor);
+				checkArithmeticExpression(idName,type,factor);
 			}
 			termID = termID->childNode->sisterNode;
 			if(termID->ruleNum == 52)
@@ -205,6 +272,8 @@ void checkArithmeticExpression(token type, astTree nodes)
 		}
 		else
 		{
+			if(acceptedType == STR && expression->childNode->ruleNum == 56)
+				typeError();
 			expression = expression->childNode->sisterNode;
 		}
 		if(flag == 1)
@@ -251,7 +320,7 @@ void checkAssignmentType1()
 	astTree rhsNodes = stmtNode->sisterNode;
 	switch(rhsNodes->ruleNum)
 	{
-		case 29: checkArithmeticExpression(type,rhsNodes);break;// Arithmetic Expression
+		case 29: checkArithmeticExpression(idName,type,rhsNodes);break;// Arithmetic Expression
 		case 30: checkSizeExpression(type,rhsNodes);break;// Size Expression
 		case 31: break; // Function call
 	}
@@ -268,6 +337,64 @@ void popTable()
 {
 	stList = stList->parentList;
 	curScope--;
+}
+
+void goToElseScope()
+{
+	curScope++;
+	scopeIdentifier++;
+	stList = stList->childList;
+	while(stList->scopeIdentifier != scopeIdentifier)
+	{
+		if(stList->sisterList != NULL)
+		{
+			stList = stList->sisterList;
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+}
+
+void goToIfScope()
+{
+	curScope++;
+	scopeIdentifier++;
+	stList = stList->childList;
+	while(stList->scopeIdentifier != scopeIdentifier)
+	{
+		if(stList->sisterList != NULL)
+		{
+			stList = stList->sisterList;
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	currentASTNode = currentASTNode->childNode->childNode->sisterNode; // stmt in ifStmt rule.
+	astTree beforeIfNode = currentASTNode; // to maintain a copy of node we were at.
+	runTypeCheckerInIfScope();
+	curScope--;
+	stList = stList->parentList;
+	astTree elseNode = beforeIfNode->sisterNode->sisterNode;
+	if(elseNode->ruleNum == 37)
+	{
+		// No else part.
+		currentASTNode = elseNode->parentNode->parentNode; //stmt rule.
+		return;
+	}
+	else
+	{
+		currentASTNode = elseNode->childNode;
+		goToElseScope();
+		runTypeCheckerInIfScope();
+		curScope--;
+		stList = stList->parentList;
+		currentASTNode = elseNode->parentNode->parentNode; //stmt rule.
+		return;
+	}
 }
 
 void goToFunctionScope()
@@ -326,6 +453,30 @@ void nextStatement()
 	}
 }
 
+void runTypeCheckerInIfScope()
+{
+	while(currentASTNode != NULL)
+	{
+		currentASTNode = currentASTNode->childNode;
+		switch(currentASTNode->ruleNum)
+		{
+			case 7: break;
+			case 8: checkAssignmentType1();break;
+			case 9: checkAssignmentType2();break;
+			case 10: goToIfScope();break; // Need to go into if scope.
+			case 11: break;
+			case 12: break; // No return type function
+		}
+		currentASTNode = currentASTNode->parentNode->sisterNode;
+		if(currentASTNode->ruleNum == 39)
+			currentASTNode = NULL;
+		else
+		{
+			currentASTNode = currentASTNode->childNode;
+		}
+	}
+}
+
 void runTypeChecker()
 {
 	while(currentASTNode != NULL)
@@ -343,7 +494,7 @@ void runTypeChecker()
 				case 7: break;
 				case 8: checkAssignmentType1();break;
 				case 9: checkAssignmentType2();break;
-				case 10: break;
+				case 10: goToIfScope();break; // Need to go into if scope.
 				case 11: break;
 				case 12: break; // No return type function
 			}
