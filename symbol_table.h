@@ -12,6 +12,8 @@ typedef enum {VAR,PARA,RETURN} idType;
 
 typedef struct _matrixSizes *matrixSizes;
 
+typedef struct _stringSizes *stringSizes;
+
 struct _STList
 {
 	STList parentList;
@@ -19,6 +21,7 @@ struct _STList
 	STList childList;
 	STable table;
 	matrixSizes matrixTable;
+	stringSizes stringTable;
 	char* functionName;
 	int scopeIdentifier;
 	int startLineNumber;
@@ -37,6 +40,13 @@ struct _STable
 	int charNumber;
 	idType type;
 	int scopeIdentifier; // Not sure if neeeded
+};
+
+struct _stringSizes
+{
+	char* stringName;
+	int length;
+	stringSizes nextEntry;
 };
 
 struct _matrixSizes

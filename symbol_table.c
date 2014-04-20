@@ -23,6 +23,7 @@ STList stList;
 STList headList;
 STable currentEntry;
 matrixSizes currentMatrix;
+stringSizes currentString;
 // STable headEntry;
 int curScope;
 int scopeIdentifier;
@@ -76,6 +77,11 @@ void initialiseSymbolTable()
 	matrixSizes headMatrix;
 	headMatrix = currentMatrix;
 	stList->matrixTable = headMatrix;
+	currentString = malloc(sizeof(struct _stringSizes));
+	currentString->nextEntry = NULL;
+	stringSizes headString;
+	headString = currentString;
+	stList->stringTable = headString;
 	// currentEntry = headEntry;
 	// currentEntry->nextEntry = malloc(sizeof(struct _STable));
 	headList = stList;
@@ -224,6 +230,23 @@ void findMatrixAssignment()
 			}
 		}
 	}
+	else if(type == STR)
+	{
+		// It is a string.
+		astTree rhsNode = currentASTNode->childNode->childNode->sisterNode;
+		if(rhsNode->ruleNum == 29)
+		{
+			astTree stringNode = rhsNode->childNode->childNode->childNode->childNode;
+			if(stringNode->ruleNum == 68)
+			{
+				currentString->stringName = idNode->data.token_data;
+				currentString->length = strlen(stringNode->childNode->data.token_data);
+				currentString->nextEntry = malloc(sizeof(struct _stringSizes));
+				currentString = currentString->nextEntry;
+				currentString->nextEntry = NULL;
+			}
+		}
+	}
 }
 
 void addSymbolTableToList()
@@ -252,6 +275,10 @@ void addSymbolTableToList()
 		headMatrix->nextEntry = NULL;
 		stList->matrixTable = headMatrix;
 		currentMatrix = headMatrix;
+		stringSizes headString = malloc(sizeof(struct _stringSizes));
+		headString->nextEntry = NULL;
+		stList->stringTable = headString;
+		currentString = headString;
 		// Go into the block and find the variables.
 		currentASTNode = currentASTNode->childNode->childNode->sisterNode; //stmt rule.
 		// createSymbolTables();
@@ -274,6 +301,10 @@ void addSymbolTableToList()
 		headEntry->nextEntry = NULL;
 		stList->table = headEntry;
 		currentEntry = headEntry;
+		stringSizes headString = malloc(sizeof(struct _stringSizes));
+		headString->nextEntry = NULL;
+		stList->stringTable = headString;
+		currentString = headString;
 		// Go into the block and find the variables.
 		currentASTNode = currentASTNode->childNode->childNode->sisterNode; //stmt rule.
 		// createSymbolTables();
@@ -307,6 +338,10 @@ void addSymbolTableForElsePartToList()
 	headMatrix->nextEntry = NULL;
 	stList->matrixTable = headMatrix;
 	currentMatrix = headMatrix;
+	stringSizes headString = malloc(sizeof(struct _stringSizes));
+	headString->nextEntry = NULL;
+	stList->stringTable = headString;
+	currentString = headString;
 	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
@@ -345,6 +380,10 @@ void addSymbolTableForFunctionToList()
 	headMatrix->nextEntry = NULL;
 	stList->matrixTable = headMatrix;
 	currentMatrix = headMatrix;
+	stringSizes headString = malloc(sizeof(struct _stringSizes));
+	headString->nextEntry = NULL;
+	stList->stringTable = headString;
+	currentString = headString;
 	stList->scopeIdentifier = scopeIdentifier;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
@@ -601,6 +640,13 @@ void printSymbolTable()
 		{
 			printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
 			matrices = matrices->nextEntry;
+		}
+		stringSizes strings = readList->stringTable;
+		printf("string sizes\n");
+		while(strings->stringName != NULL)
+		{
+			printf("%d, %s\n",strings->length,strings->stringName);
+			strings = strings->nextEntry;
 		}
 		printf("Going to child table\n");
 		if(readList->childList != NULL)

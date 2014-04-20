@@ -78,6 +78,53 @@ void checkSizeExpression(token type, astTree nodes)
 	}
 }
 
+void fillDataInMatrixTable(char* name, int rows, int cols)
+{
+	matrixSizes entry = stList->matrixTable;
+	while(entry->matrixName != NULL)
+	{
+		entry = entry->nextEntry;
+	}
+	entry->matrixName = name;
+	entry->rows = rows;
+	entry->columns = cols;
+	entry->nextEntry = malloc(sizeof(struct _matrixSizes));
+	entry = entry->nextEntry;
+	entry->nextEntry = NULL;
+}
+
+void fillDataInStringTable(char* name, int length)
+{
+	stringSizes entry = stList->stringTable;
+	while(entry->stringName != NULL)
+	{
+		entry = entry->nextEntry;
+	}
+	entry->stringName = name;
+	entry->length = length;
+	entry->nextEntry = malloc(sizeof(struct _stringSizes));
+	entry = entry->nextEntry;
+	entry->nextEntry = NULL;
+}
+
+int getSize(char* name)
+{
+	stringSizes entry = stList->stringTable;
+	if(entry->stringName == NULL)
+		return 0;
+	while(strcmp(entry->stringName,name))
+	{
+		entry = entry->nextEntry;
+		if(entry->stringName == NULL)
+		{
+			// No such string name found.
+			typeError();
+			return 0;
+		}
+	}
+	return entry->length;
+}
+
 matrixSizes findMatrixInMatrixTable(char* name, int flag)
 {
 	matrixSizes entry = stList->matrixTable;
@@ -108,6 +155,8 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 	astTree expression = nodes->childNode;
 	int acceptedRows = 0;
 	int acceptedCols = 0;
+	int stringLength = 0;
+	int assignMatrix = 0; // Whether to enter the size in MatrixTable or not.
 	if(acceptedType == MATRIX)
 	{
 		// Find the size of the LHS matrix.
@@ -115,6 +164,7 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 		if(matrix == NULL)
 		{
 			// The name wasn't found.
+			assignMatrix = 1;
 		}
 		else
 		{
@@ -174,6 +224,13 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 							}
 							else
 							{
+								int length= getSize(typeNode->childNode->data.token_data);
+								if(length == 0)
+								{
+									// No string found error.
+									return;
+								}
+								stringLength += length;
 								lowPrecedenceOnly = 1;
 							}
 						}
@@ -278,6 +335,14 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 		}
 		if(flag == 1)
 			typeError();
+	}
+	if(assignMatrix)
+	{
+		fillDataInMatrixTable(idName,acceptedRows,acceptedCols);
+	}
+	if(acceptedType == STR && stringLength > 0)
+	{
+		fillDataInStringTable(idName,stringLength);
 	}
 }
 
@@ -504,6 +569,42 @@ void runTypeChecker()
 	}
 }
 
+void printTable(STList headList)
+{
+	STList readList = headList;
+	printf("\n\n");
+	printf("Printing all the symbols\n");
+	while(readList != NULL)
+	{
+		printf("%s(%d) From %d to %d\n",readList->functionName,readList->scopeIdentifier,readList->startLineNumber,readList->endLineNumber);
+		STable entry = readList->table;
+		while(entry->data != NULL)
+		{
+			printf("%s, scope: %d, type: %d, lineNumber: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber,entry->data->type);
+			entry = entry->nextEntry;
+		}
+		printf("matrix sizes\n");
+		matrixSizes matrices = readList->matrixTable;
+		while(matrices->matrixName != NULL)
+		{
+			printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
+			matrices = matrices->nextEntry;
+		}
+		stringSizes strings = readList->stringTable;
+		printf("string sizes\n");
+		while(strings->stringName != NULL)
+		{
+			printf("%d, %s\n",strings->length,strings->stringName);
+			strings = strings->nextEntry;
+		}
+		printf("Going to child table\n");
+		if(readList->childList != NULL)
+			readList = readList->childList;
+		else
+			return;
+	}
+}
+
 int typeChecker(astTree astRoot, STList headList)
 {
 	curScope = 0;
@@ -511,6 +612,7 @@ int typeChecker(astTree astRoot, STList headList)
 	currentASTNode = astRoot->childNode->childNode;
 	stList = headList;
 	runTypeChecker();
+	printTable(headList);
 	printf("Type checker Ran successfully\n");
 	return 0;
 }
