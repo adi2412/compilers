@@ -22,6 +22,7 @@ STList stList;
 STable currentEntry;
 int curScope;
 int scopeIdentifier;
+int returnParamsAssignedValue;
 
 void semanticError()
 {
@@ -33,24 +34,30 @@ void popTableInSemanticAnalyzer()
 {
 	stList = stList->parentList;
 	curScope--;
+	if(returnParamsAssignedValue != 0)
+	{
+		// All return variables have not been assigned a value.
+		semanticError();
+		return;
+	}
 }
 
-int doesExistInSymbolTable(char* name)
-{
-	STable entry = stList->table;
-	while(strcmp(entry->data->value, name))
-	{
-		entry = entry->nextEntry;
-		if(entry->data == NULL)
-		{
-			// All entries in the current scope over. Check parent scope.
-			if(stList->parentList == NULL)
-				return 0;
-			entry = stList->parentList->table;
-		}
-	}
-	return 1;
-}
+// int doesExistInSymbolTable(char* name)
+// {
+// 	STable entry = stList->table;
+// 	while(strcmp(entry->data->value, name))
+// 	{
+// 		entry = entry->nextEntry;
+// 		if(entry->data == NULL)
+// 		{
+// 			// All entries in the current scope over. Check parent scope.
+// 			if(stList->parentList == NULL)
+// 				return 0;
+// 			entry = stList->parentList->table;
+// 		}
+// 	}
+// 	return 1;
+// }
 
 STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumber)
 {
@@ -105,28 +112,27 @@ STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumbe
 	return findList;
 }
 
-void analyzeDeclarationStmt()
-{
-	astTree declarationStmt = currentASTNode->childNode;
-	astTree idNodes = declarationStmt->childNode->sisterNode;
-	while(idNodes != NULL)
-	{
-		astTree idNode = idNodes->childNode;
-		if(!doesExistInSymbolTable(idNode->data.token_data))
-		{
-			// Same name variable exists in current scope.
-			semanticError();
-		}
-		else
-		{
-			idNodes = idNodes->childNode->sisterNode;
-			if(idNodes->ruleNum == 24)
-				idNodes = NULL;
-			else
-				idNodes = idNodes->childNode;
-		}
-	}
-}
+// void // {
+// 	astTree declarationStmt = currentASTNode->childNode;
+// 	astTree idNodes = declarationStmt->childNode->sisterNode;
+// 	while(idNodes != NULL)
+// 	{
+// 		astTree idNode = idNodes->childNode;
+// 		if(!doesExistInSymbolTable(idNode->data.token_data))
+// 		{
+// 			// Same name variable exists in current scope.
+// 			semanticError();
+// 		}
+// 		else
+// 		{
+// 			idNodes = idNodes->childNode->sisterNode;
+// 			if(idNodes->ruleNum == 24)
+// 				idNodes = NULL;
+// 			else
+// 				idNodes = idNodes->childNode;
+// 		}
+// 	}
+// }
 
 void analyzeAssignmentStmt()
 {
@@ -245,6 +251,19 @@ void analyzeAssignmentStmt()
 				semanticError();
 				return;
 			}
+		}
+	}
+	else
+	{
+		// Check if left hand side is one of the return values.
+		astTree LHSNode = assignmentStmt->childNode;
+		astTree idNode = LHSNode->childNode;
+		STable entry = stList->table;
+		while(entry->type == RETURN)
+		{
+			if(!strcmp(entry->data->value,idNode->data.token_data))
+				returnParamsAssignedValue--;
+			entry = entry->nextEntry;
 		}
 	}
 }
@@ -470,6 +489,29 @@ void analyzeAssignmentType2Stmt()
 			return;
 		}
 	}
+	else
+	{
+		// Check if any of the LHS nodes is a return variable.
+		astTree LHSNodes = assignmentStmt->childNode->childNode;
+		while(LHSNodes != NULL)
+		{
+			astTree idNode = LHSNodes->childNode;
+			STable entry = stList->table;
+			while(entry->type == RETURN)
+			{
+				if(!strcmp(entry->data->value,idNode->data.token_data))
+					returnParamsAssignedValue--;
+				entry = entry->nextEntry;
+			}
+			LHSNodes = LHSNodes->childNode->sisterNode;
+			if(LHSNodes->ruleNum == 24)
+				LHSNodes = NULL;
+			else
+			{
+				LHSNodes = LHSNodes->childNode;
+			}
+		}
+	}
 }
 
 void analyzeFunctionScope()
@@ -489,6 +531,12 @@ void analyzeFunctionScope()
 		}
 	}
 	currentASTNode = currentASTNode->childNode->childNode->sisterNode->sisterNode->sisterNode->childNode; // stmtOrFunctionDef
+	STable returnEntries = stList->table;
+	while(returnEntries->type == RETURN)
+	{
+		returnParamsAssignedValue++;
+		returnEntries = returnEntries->nextEntry;
+	}
 	runSemanticAnalyzer();
 	popTableInSemanticAnalyzer();
 }
@@ -593,7 +641,7 @@ void runSemanticAnalyzerInIfScope()
 		currentASTNode = currentASTNode->childNode;
 		switch(currentASTNode->ruleNum)
 		{
-			case 7: analyzeDeclarationStmt();break;
+			case 7: break;
 			case 8: analyzeAssignmentStmt();break;
 			case 9: analyzeAssignmentType2Stmt();break;
 			case 10: analyzeIfStmt();break;
@@ -627,7 +675,7 @@ void runSemanticAnalyzer()
 			currentASTNode = currentASTNode->childNode;
 			switch(currentASTNode->ruleNum)
 			{
-				case 7: analyzeDeclarationStmt();break;
+				case 7: break;
 				case 8: analyzeAssignmentStmt();break;
 				case 9: analyzeAssignmentType2Stmt();break;
 				case 10: analyzeIfStmt();break;
@@ -644,6 +692,7 @@ int semanticAnalyzer(astTree astRoot, STList headList)
 {
 	curScope = 0;
 	scopeIdentifier = 0;
+	returnParamsAssignedValue = 0;
 	currentASTNode = astRoot->childNode->childNode;
 	stList = headList;
 	runSemanticAnalyzer();

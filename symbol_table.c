@@ -27,6 +27,34 @@ matrixSizes currentMatrix;
 int curScope;
 int scopeIdentifier;
 
+int doesExistInSymbolTable(char* name)
+{
+	STable entry = stList->table;
+	STList readList = stList;
+	if(entry->data == NULL)
+	{
+		if(readList->parentList == NULL)
+			return 0;
+		entry = readList->parentList->table;
+		readList = readList->parentList;
+	}
+	while(strcmp(entry->data->value, name))
+	{
+		printf("%s\n",entry->data->value);
+		entry = entry->nextEntry;
+		if(entry->data == NULL)
+		{
+			// All entries in the current scope over. Check parent scope.
+			if(readList->parentList == NULL)
+				return 0;
+			entry = readList->parentList->table;
+			readList = readList->parentList;
+			printf("Going to parent\n");
+		}
+	}
+	return 1;
+}
+
 void initialiseSymbolTable()
 {
 	stList->parentList = NULL;
@@ -55,6 +83,12 @@ void initialiseSymbolTable()
 
 void addToCurrentSymbolTable(astTree data, token type,int idType)
 {
+	if(doesExistInSymbolTable(data->data.token_data))
+	{
+		// Same name already declared before.
+		fprintf(stderr, "Name declared before\n");
+		exit(0);
+	}
 	currentEntry->scope = curScope;
 	currentEntry->offset = 0;
 	fprintf(stderr, "Upto here\n");
