@@ -19,9 +19,6 @@
 [ remainingList ] ===) COMMA [ parameter_list ] 
 [ remainingList ] ===) ? 
 [ declarationStmt ] ===) [ type ] [ var_list ] SEMICOLON 
-[ var_list ] ===) ID [ more_ids ] 
-[ more_ids ] ===) COMMA [ var_list ] 
-[ more_ids ] ===) ? 
 [ assignmentStmt_type1 ] ===) [ leftHandSide_singleVar ] ASSIGNOP [ rightHandSide_type1 ] SEMICOLON 
 [ assignmentStmt_type2 ] ===) [ leftHandSide_listVar ] ASSIGNOP [ rightHandSide_type2 ] SEMICOLON 
 [ leftHandSide_singleVar ] ===) ID 
@@ -31,9 +28,12 @@
 [ rightHandSide_type1 ] ===) [ funCallStmt ] 
 [ rightHandSide_type2 ] ===) [ sizeExpression ] 
 [ rightHandSide_type2 ] ===) [ funCallStmt ] 
+[ var_list ] ===) ID [ more_ids ] 
+[ more_ids ] ===) COMMA [ var_list ] 
+[ more_ids ] ===) ? 
 [ sizeExpression ] ===) SIZE ID 
 [ ifStmt ] ===) IF OP [ booleanExpression ] CL [ stmt ] [ otherStmts ] [ elsePart ] 
-[ elsePart ] ===) ELSE [ stmt ] [otherStmts ] ENDIF SEMICOLON 
+[ elsePart ] ===) ELSE [ stmt ] [ otherStmts ] ENDIF SEMICOLON 
 [ elsePart ] ===) ENDIF SEMICOLON 
 [ otherStmts ] ===) [ stmt ] [ otherStmts ] 
 [ otherStmts ] ===) ? 
@@ -44,14 +44,14 @@
 [ inputParameterList ] ===) ? 
 [ listVar ] ===) COMMA [ inputParameterList ] 
 [ listVar ] ===) ? 
+[ factor ] ===) OP [ arithmeticExpression ] CL 
+[ factor ] ===) [ var ] 
 [ arithmeticExpression ] ===) [ arithmeticTerm ] [ arithmeticExpression_type2 ] 
 [ arithmeticExpression_type2 ] ===) [ operator_lowPrecedence ] [ arithmeticExpression ] 
 [ arithmeticExpression_type2 ] ===) ? 
 [ arithmeticTerm ] ===) [ factor ] [ arithmeticTerm_type2 ] 
 [ arithmeticTerm_type2 ] ===) [ operator_highPrecedence ] [ arithmeticTerm ] 
 [ arithmeticTerm_type2 ] ===) ? 
-[ factor ] ===) OP [ arithmeticExpression ] CL 
-[ factor ] ===) [ var ] 
 [ operator_lowPrecedence ] ===) PLUS 
 [ operator_lowPrecedence ] ===) MINUS 
 [ operator_highPrecedence ] ===) MUL 

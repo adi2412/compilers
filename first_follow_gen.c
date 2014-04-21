@@ -571,6 +571,18 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 					}
 					if(LHSNonTerm != nonTerm)
 					{
+						if(LHSNonTerm == 10)
+						{
+							printf("Adding follow of var_list\n\n\n\n\n\n\n\n");
+							if(head[LHSNonTerm]->followSet[SQC] != NULL)
+							{
+								printf("WTF IT DOES EXIST!!!\n");
+							}
+							else
+							{
+								printf("OK SOMETHING IS WRONG HERE\n");
+							}
+						}
 						head[nonTerm]->followSet = addFollows(head[nonTerm]->followSet,head[LHSNonTerm]->followSet,ruleList);
 					}
 				}

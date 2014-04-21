@@ -140,7 +140,7 @@ void analyzeAssignmentStmt()
 	printf("analyzing assignment statement\n");
 	astTree assignmentStmt = currentASTNode->childNode;
 	astTree rhsNodes = assignmentStmt->childNode->sisterNode;
-	if(rhsNodes->ruleNum == 31)
+	if(rhsNodes->ruleNum == 28)
 	{
 		astTree returnID = assignmentStmt->childNode->childNode;
 		token returnType = checkTypeInSymbolTable(returnID->data.token_data);
@@ -369,7 +369,7 @@ void analyzeAssignmentType2Stmt()
 	// Only need to check if it is a fun call stmt and analyze that.
 	astTree assignmentStmt = currentASTNode->childNode;
 	astTree rhsNodes = assignmentStmt->childNode->sisterNode;
-	if(rhsNodes->ruleNum == 33)
+	if(rhsNodes->ruleNum == 30)
 	{
 		astTree returnList = assignmentStmt->childNode->childNode;
 		STList funcSymbolTable = findFunctionSymbolTable(rhsNodes->childNode->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber);
@@ -406,7 +406,7 @@ void analyzeAssignmentType2Stmt()
 			}
 			returnParams = returnParams->nextEntry;
 			returnList = returnList->childNode->sisterNode;
-			if(returnList->ruleNum == 24)
+			if(returnList->ruleNum == 33)
 				returnList = NULL;
 			else
 				returnList = returnList->childNode;
@@ -504,7 +504,7 @@ void analyzeAssignmentType2Stmt()
 				entry = entry->nextEntry;
 			}
 			LHSNodes = LHSNodes->childNode->sisterNode;
-			if(LHSNodes->ruleNum == 24)
+			if(LHSNodes->ruleNum == 33)
 				LHSNodes = NULL;
 			else
 			{
