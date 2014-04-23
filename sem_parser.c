@@ -19,12 +19,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "parserDef.h"
 #include "tokens.h"
 #include "lexer.h"
+#include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
 #include "sem_parser.h"
+#include "ast.h"
+#include "symbol_table.h"
+#include "type_extractor.h"
+#include "semantic_analyzer.h"
+
 #define OFFSET2 4 //acc to semantic_rules.txt
 #define OFFSET3 3 //be sem line indicator nd next term
 #define NOSEMRULES 86 //no of sem rules

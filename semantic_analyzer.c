@@ -13,6 +13,8 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
 #include "semantic_analyzer.h"
