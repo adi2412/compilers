@@ -55,7 +55,7 @@ semRuleArray returnSemanticRules()
 		FILE *sem_rules_file = fopen("semantic_rules.txt","r");
 		if(sem_rules_file == NULL)
 		{
-			printf("The semantic file could not be found.\n");
+			printf("The semantic rules file could not be found.\n");
 			exit(1);
 		}
 		//semantics headRule;

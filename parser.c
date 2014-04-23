@@ -16,14 +16,19 @@
 #include "first_follow_gen.h"
 #include "parser.h"
 
+#define ERRLINESIZE 200
 parseTable PT[NONTERMINALS][TERMINALS];
 stack head;
 tree currentNode;
 tree root;
 
-void error(int d)
+void showPError(char *errtext,int errline)
 {
-	printf("An error was generated at %d\n",d);
+	printf("\n\x1b[31mParsing error.\x1b[0m");
+	if ( errline != -1)
+	printf("\n\x1b[31m%sAt line %d\n\x1b[0m", errtext,errline);
+	else
+	printf("\n\x1b[31m%s\n\x1b[0m", errtext);
 	exit(0);
 }
 
@@ -58,8 +63,11 @@ void createParseTable(nonterm nonTerm)
 			{
 				if(PT[i][j].ruleNumber != 0)
 				{
-					fprintf(stderr,"There are two clashing rules");
-					exit(0);
+					//fprintf(stderr,"There are two clashing rules");
+					//exit(0);
+					char *err =	malloc(sizeof(char)*ERRLINESIZE);
+					sprintf(err,"There are two clasing rules.");
+					showPError(err,-1);
 				}
 				PT[i][j].ruleNumber = firstSet[j]->ruleNum;
 			}
@@ -432,8 +440,16 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			else
 			{
 				// Some other terminal in input code.
-				printf("wtf? %d and %d\n",head->element.tokValue,readToken->token_name);
-				error(1);
+				char *err = malloc(sizeof(char)*ERRLINESIZE);
+				if(head->element.flag)		//nonterminal
+				sprintf(err,"Wrong token. Expected %s instead of %s.\n",getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+				else
+				sprintf(err,"Wrong token. Expected %s instead of %s.\n",getTokenName(head->element.tokValue),getTokenName(readToken->token_name));
+				showPError(err,readToken->lineNumber);
+				///err soln
+				//goToNextNode(readToken);
+				//readToken = readToken->nextToken;
+
 			}
 		}
 		else
@@ -442,8 +458,9 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			if(PT[head->element.nontermValue][readToken->token_name].ruleNumber == 0)
 			{
 				// No entry in Parse Table.
-				printf("no entry for %d and %d",head->element.nontermValue,readToken->token_name);
-				error(2);
+				char *err = malloc(sizeof(char)*ERRLINESIZE);
+				sprintf(err,"Entry not found in parse table for %s and %s.",getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+				showPError(err,readToken->lineNumber);
 				
 			}
 			else
@@ -452,8 +469,10 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 				int ruleNumber = PT[head->element.nontermValue][readToken->token_name].ruleNumber;
 				if(ruleNumber == 0)
 				{
-					printf("Kuch toh gadbad hai boss\n");
-					exit(0);
+					char *err = malloc(sizeof(char)*ERRLINESIZE);
+					sprintf(err,"Entry not found in parse table for %s and %s.", getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+					showPError(err, readToken->lineNumber);
+					//exit(0);
 				}
 				rule correctRule = findRule(ruleNumber, headRule);
 				pop();
@@ -473,9 +492,11 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		else
 		{
 			// Parsing not successful.
-			printf("%d\n",head->element.tokValue);
-			printf("%d\n",head->element.nontermValue);
-			error(3);
+			char *err =	malloc(sizeof(char)*ERRLINESIZE);
+			sprintf(err,"Parsing not successful. token: %s, nonterm: %s,", getTokenName(head->element.tokValue),getNonTermValue(head->element.nontermValue));
+			//printf("%d\n",head->element.tokValue);
+			//printf("%d\n",head->element.nontermValue);
+			showPError(err,-1);
 		}
 	}
 	else if(head->element.tokValue == DOL)
@@ -483,8 +504,10 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		if(readToken != NULL)
 		{
 			// Stack empty but input still exists.
-			printf("%d\n",readToken->token_name);
-			error(4);
+			char *err =	malloc(sizeof(char)*ERRLINESIZE);
+			sprintf(err,"Stack empty, but input still exists. token: %s.",getTokenName(readToken->token_name));
+			//printf("%d\n",readToken->token_name);
+			showPError(err,readToken->lineNumber);
 		}
 		else
 		{
