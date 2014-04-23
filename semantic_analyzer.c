@@ -72,6 +72,11 @@ void popTableInSemanticAnalyzer()
  */
 STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumber, int lineNum, int colNum)
 {
+	if(!strcmp(name,stList->functionName))
+	{
+		semanticError(2,name,lineNum,colNum);
+		return NULL;
+	}
 	STList findList = stList->childList;
 	STable entry = findList->table;
 	while(strcmp(findList->functionName,name))
@@ -119,9 +124,43 @@ STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumbe
 		{
 			// Do separate semantic errors for recursive calls and for function call before definition error.
 			semanticError(2,name,lineNum,colNum);
+			return NULL;
 		}
 	}
 	return findList;
+}
+
+token findTypeInSymbolTable(STList list,char* name,int lineNum, int charNum)
+{
+	STable entry = list->table;
+	STList readList = list;
+	if(entry->data == NULL)
+	{
+		if(readList->parentList == NULL)
+		{
+			// typeError(2,name,lineNum,charNum);
+			return INVALID;
+		}
+		entry = readList->parentList->table;
+		readList = readList->parentList;
+	}
+	while(strcmp(entry->data->value,name))
+	{
+		entry = entry->nextEntry;
+		if(entry->data == NULL)
+		{
+			// All entries in current scope over. Check above scope.
+			if(readList->parentList == NULL)
+			{
+				// typeError(2,name,lineNum,charNum);
+				entry = NULL;
+				return INVALID;
+			}
+			entry = readList->parentList->table;
+			readList = readList->parentList;
+		}
+	}
+	return convertToType(entry->data->type);
 }
 
 /**
@@ -150,11 +189,13 @@ void analyzeAssignmentStmt()
 		{
 			// This function has no return values.
 			semanticError(3,returnID->data.token_data,returnID->data.lineNumber,returnID->data.charNumber);
+			return;
 		}
 		if(returnParamType != returnType)
 		{
 			// Return type does not match variable on LHS.
 			semanticError(4,returnID->data.token_data,returnID->data.lineNumber,returnID->data.charNumber);
+			return;
 		}
 		else
 		{
@@ -162,9 +203,9 @@ void analyzeAssignmentStmt()
 			{
 				// More return values, but only one variable on LHS.
 				semanticError(5,funcSymbolTable->functionName,returnID->data.lineNumber,returnID->data.charNumber);
+				return;
 			}
 		}
-
 		// Check that the parameters being passed are the same as the one required by the function.
 		astTree inputParaList = rhsNodes->childNode->childNode->sisterNode;
 		STable inputParams = funcSymbolTable->table->nextEntry;
@@ -232,7 +273,6 @@ void analyzeAssignmentStmt()
 				inputParaList = inputParaList->childNode;
 			}
 		}
-
 		// All function parameters are over.
 		// Check if the input parameter list is also over.
 		if(inputParaList != NULL)
@@ -240,8 +280,11 @@ void analyzeAssignmentStmt()
 			if(inputParaList->ruleNum != 46)
 			{
 				// There are extra input parameters being sent.
-				semanticError(8,"",inputParaList->childNode->childNode->childNode->data.lineNumber,inputParaList->childNode->childNode->childNode->data.lineNumber);
-				return;
+				if(inputParaList->childNode->ruleNum != 44)
+				{
+					semanticError(8,"",inputParaList->childNode->childNode->data.lineNumber,inputParaList->childNode->childNode->data.lineNumber);
+					return;
+				}
 			}
 		}
 	}
@@ -389,8 +432,11 @@ void analyzeAssignmentType2Stmt()
 			{
 				astTree returnParam = returnList->childNode;
 				token returnParamType;
-				returnParamType = checkTypeInSymbolTable(returnParam->childNode->data.token_data,returnParam->childNode->data.lineNumber,returnParam->childNode->data.charNumber);
-				if(returnParamType == NIL)
+				if(returnParam->childNode == NULL)
+					returnParamType = INVALID;
+				else
+					returnParamType = findTypeInSymbolTable(funcSymbolTable,returnParam->childNode->data.token_data,returnParam->childNode->data.lineNumber,returnParam->childNode->data.charNumber);
+				if(returnParamType == INVALID)
 				{
 					// There was an error. Move on to the next statement.
 					return;
@@ -409,7 +455,6 @@ void analyzeAssignmentType2Stmt()
 			else
 				returnList = returnList->childNode;
 		}
-
 		// Check that the parameters being passed are the same as the one required by the function.
 		astTree inputParaList = rhsNodes->childNode->childNode->sisterNode;
 		STable inputParams = funcSymbolTable->table->nextEntry;
@@ -540,7 +585,7 @@ void analyzeFunctionScope()
 		returnEntries = returnEntries->nextEntry;
 	}
 	runSemanticAnalyzer();
-	popTableInSemanticAnalyzer();
+	// popTableInSemanticAnalyzer();
 }
 
 /**

@@ -28,7 +28,7 @@ int main(int argc,char* argv[])
 		printf("Invalid number of arguments\n");
 		exit(0);
 	}
-	printf("\x1b[37m\x1b[1m\x1b[4m\n\t\t\tCompilers Group 2\n\n\x1b[0m");
+	printf("\n\t\t\t\x1b[37m\x1b[1m\x1b[4mCompilers Group 2\n\n\x1b[0m");
 	printf("\x1b[36m\x1b[1m\tAditya Raisinghani\t\tUtkarsh Verma\n\x1b[0m");
 	printf("\x1b[37m\x1b[3m\t2011A7PS042P\t\t\t2011A7PS137P\n\n\x1b[0m");
 	printf("\x1b[32m\tUnder supervision of Vandana Agarwal\n\n\x1b[0m");
@@ -41,7 +41,7 @@ int main(int argc,char* argv[])
 	printf("->Type checker, semantic analyzer implemented\n");
 	printf("->Code generation could not be completed\n\x1b[0m");
 
-	printf("\x1b[4m\x1b[40m\x1b[31m\x1b[1m\n\tLEVEL 3: Symbol table/type Checking/AST/Semantic Rules modules works\n\n\x1b[0m");
+	printf("\n\t\x1b[4m\x1b[40m\x1b[31m\x1b[1mLEVEL 3: Symbol table/type Checking/AST/Semantic Rules modules works\n\n\x1b[0m");
 		
 	printf("\n\x1b[33m\x1b[1mPress option for the defined task:\x1b[0m\n");
 	printf("\x1b[37m1:\x1b[22m\x1b[1m for printing token list\x1b[0m\n");

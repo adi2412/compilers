@@ -37,7 +37,7 @@ void typeError(int error,char* name,int lineNum,int charNum)
 		case 5: printf("\x1b[31mSemantic Error: Size of matrix \x1b[37m\x1b[1m%s\x1b[31m does not match in expression on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
 		case 6: printf("\x1b[31mSemantic Error: Only addition and substraction operations allowed for strings and matrices on line number \x1b[37m\x1b[1m%d:%d\n\x1b[0m",lineNum,charNum);break;
 		case 7: printf("\x1b[31mSemantic Error: Identifier \x1b[37m\x1b[1m%s\x1b[31m can only have add operation with other strings on line number \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
-		case 8:printf("\x1b[31mSemantic Error: Type mismatch for \x1b[37m\x1b[1m%s\x1b[31m. Number and real number can evaluate only if division operation is used on line number \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 8:printf("\x1b[31mSemantic Error: Type mismatch. Number and real number can evaluate only if division operation is used on line number \x1b[37m\x1b[1m%d:%d\n\x1b[0m",lineNum,charNum);break;
 		case 9:printf("\x1b[31mSemantic Error: Identifier \x1b[37m\x1b[1m%s\x1b[31m is extra. Only two variables returned for size expression on matrix on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
 		case 10:printf("\x1b[31mSemantic Error: Only one identifier \x1b[37m\x1b[1m%s\x1b[31m on LHS of size expression on matrix. Requires two on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
 	}
@@ -427,7 +427,13 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 			expression = expression->childNode->sisterNode;
 		}
 		if(flag == 1)
-			typeError(8,expression->childNode->data.token_data,expression->childNode->childNode->data.lineNumber,expression->childNode->childNode->data.charNumber);
+		{
+			astTree parentNode = expression->parentNode;
+			while(parentNode->data.flag)
+				parentNode = parentNode->childNode;
+			typeError(8,parentNode->data.token_data,parentNode->data.lineNumber,parentNode->data.charNumber);
+			return;
+		}
 	}
 	if(assignMatrix)
 	{
@@ -599,7 +605,7 @@ void goToFunctionScope()
 	}
 	currentASTNode = currentASTNode->childNode->childNode->sisterNode->sisterNode->sisterNode->childNode; // stmtOrFunctionDef
 	runTypeChecker();
-	popTable();
+	// popTable();
 }
 
 /**
