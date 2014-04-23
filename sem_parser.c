@@ -1,3 +1,9 @@
+/* Compilers Project Group 2
+// Aditya Raisinghani 2011A7PS042P
+// Utkarsh Verma 2011A7PS137P
+// BITS Pilani, Pilani Campus
+// Second semester 2014
+*/
 
 //get file of sem rules
 //read the file, store each NT with its semantc expansion: 

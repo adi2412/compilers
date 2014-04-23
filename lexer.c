@@ -476,66 +476,77 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = OP;
+		token->token_value = "(";
 		return token;
 	}
 	else if(a == ')')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = CL;
+		token->token_value = ")";
 		return token;
 	}
 	else if(a == '[')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQO;
+		token->token_value = "[";
 		return token;
 	}
 	else if(a == ']')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQC;
+		token->token_value = "]";
 		return token;
 	}
 	else if(a == ';')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SEMICOLON;
+		token->token_value = ";";
 		return token;
 	}
 	else if(a == ',')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = COMMA;
+		token->token_value = ",";
 		return token;
 	}
 	else if(a == '+')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = PLUS;
+		token->token_value = "+";
 		return token;
 	}
 	else if(a == '-')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = MINUS;
+		token->token_value = "-";
 		return token;
 	}
 	else if(a == '*')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = MUL;
+		token->token_value = "*";
 		return token;
 	}
 	else if(a == '/')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = DIV;
+		token->token_value = "/";
 		return token;
 	}
 	else if(a == '@')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SIZE;
+		token->token_value = "@";
 		return token;
 	}
 	// Check for comments token and safely ignore
@@ -594,6 +605,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				token->token_name = GE;
 				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = ">=";
 				free(nextToken);
 				return token;
 			}
@@ -602,6 +614,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				token->token_name = LE;
 				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = "<=";
 				free(nextToken);
 				return token;
 			}
@@ -617,6 +630,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				B->curPointer = curPointer + 1;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = ">";
 				free(nextToken);
 				return token;
 			}
@@ -627,6 +641,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				B->curPointer = curPointer + 1;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = "<";
 				free(nextToken);
 				return token;
 			}
@@ -644,6 +659,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// EQ token.
 			token->token_name = EQ;
+			token->token_value = "==";
 			B->charNumber = ++B->fwdPointer;
 			free(nextToken);
 			return token;
@@ -655,6 +671,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			{
 				// It is the NE token.
 				token->token_name = NE;
+				token->token_value = "=/=";
 				++B->fwdPointer;
 				++B->curPointer;
 				++B->charNumber;
@@ -681,6 +698,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			token->token_name = ASSIGNOP;
 			// Lost the next token. Need to generate again.
 			B->curPointer = ++curPointer;
+			token->token_value = "=";
 			B->fwdPointer = B->curPointer;
 			B->charNumber = B->fwdPointer;
 			free(nextToken);
@@ -706,6 +724,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// AND token.
 					token->token_name = AND;
+					token->token_value = ".and.";
 					// Increment current and fwd pointer.
 					++B->fwdPointer;
 					++B->curPointer;
@@ -733,6 +752,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// OR token.
 					token->token_name = OR;
+					token->token_value = ".or.";
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -758,6 +778,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// NOT token.
 					token->token_name = NOT;
+					token->token_value = ".not.";
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;

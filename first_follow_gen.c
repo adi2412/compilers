@@ -256,16 +256,6 @@ nonterm initialiseNonTerminals()
 	{
 		nonTermHead[i] = NULL;
 	}
-	// Initialise their first and follow sets to NULL.
-	// for(i=0;i<NONTERMINALS;++i)
-	// {
-	// 	int j;
-	// 	for(j=0;j<TERMINALS;++j)
-	// 	{
-	// 		nonTermHead[i]->firstSet[j] = NULL;
-	// 		nonTermHead[i]->followSet[j] = NULL;
-	// 	}
-	// }
 	return nonTermHead;
 }
 

@@ -1,3 +1,10 @@
+/* Compilers Project Group 2
+// Aditya Raisinghani 2011A7PS042P
+// Utkarsh Verma 2011A7PS137P
+// BITS Pilani, Pilani Campus
+// Second semester 2014
+*/
+
 #ifndef SYMBOL
 #define SYMBOL
 
@@ -42,6 +49,9 @@ struct _STable
 	int scopeIdentifier; // Not sure if neeeded
 };
 
+/**
+ * Separate structure to store string names and their sizes.
+ */
 struct _stringSizes
 {
 	char* stringName;
@@ -49,6 +59,9 @@ struct _stringSizes
 	stringSizes nextEntry;
 };
 
+/**
+ * Separate structure to store matrix names and their rows and columns.
+ */
 struct _matrixSizes
 {
 	char* matrixName;
@@ -57,6 +70,9 @@ struct _matrixSizes
 	matrixSizes nextEntry;
 };
 
+/**
+ * Stores the name of each identifier in symbol table.
+ */
 struct _identifier
 {
 	token symbol;
