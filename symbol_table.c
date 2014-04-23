@@ -28,6 +28,12 @@ stringSizes currentString;
 int curScope;
 int scopeIdentifier;
 
+void STError()
+{
+	fprintf(stderr,"An STError was generated\n");
+	exit(0);
+}
+
 int doesExistInSymbolTable(char* name)
 {
 	STable entry = stList->table;
@@ -56,6 +62,40 @@ int doesExistInSymbolTable(char* name)
 	return 1;
 }
 
+token convertType(token type)
+{
+	if(type == INT)
+		return NUM;
+	else if(type == REAL)
+		return RNUM;
+	else if(type == STRING)
+		return STR;
+	else if(type == MATRIX)
+		return MATRIX;
+	return INVALID;
+}
+
+token checkTypeInFormedSymbolTable(char* name)
+{
+	STable entry = stList->table;
+	while(strcmp(entry->data->value,name))
+	{
+		entry = entry->nextEntry;
+		if(entry->data == NULL)
+		{
+			// All entries in current scope over. Check above scope.
+			if(stList->parentList == NULL)
+			{
+				STError();
+				entry = NULL;
+				break;
+			}
+			entry = stList->parentList->table;
+		}
+	}
+	return convertType(entry->data->type);
+}
+
 void initialiseSymbolTable()
 {
 	stList->parentList = NULL;
@@ -78,6 +118,7 @@ void initialiseSymbolTable()
 	headMatrix = currentMatrix;
 	stList->matrixTable = headMatrix;
 	currentString = malloc(sizeof(struct _stringSizes));
+	currentString->stringName = NULL;
 	currentString->nextEntry = NULL;
 	stringSizes headString;
 	headString = currentString;
@@ -127,7 +168,7 @@ void findIdentifiers()
 		astTree dataNode = varNodes->childNode;
 		addToCurrentSymbolTable(dataNode,type,0);
 		varNodes = varNodes->childNode->sisterNode;
-		if(varNodes->ruleNum == 24)
+		if(varNodes->ruleNum == 33)
 		{
 			// Identifiers are over.
 			break;
@@ -172,12 +213,12 @@ void findParameters(int idType)
 void findMatrixAssignment()
 {
 	astTree idNode = currentASTNode->childNode->childNode->childNode;
-	token type = checkTypeInSymbolTable(idNode->data.token_data);
+	token type = checkTypeInFormedSymbolTable(idNode->data.token_data);
 	if(type == MATRIX)
 	{
 		// It is a matrix.
 		astTree rhsNode = currentASTNode->childNode->childNode->sisterNode;
-		if(rhsNode->ruleNum == 29)
+		if(rhsNode->ruleNum == 26)
 		{
 			astTree matrixNode = rhsNode->childNode->childNode->childNode->childNode;
 			if(matrixNode->ruleNum == 69)
@@ -234,16 +275,20 @@ void findMatrixAssignment()
 	{
 		// It is a string.
 		astTree rhsNode = currentASTNode->childNode->childNode->sisterNode;
-		if(rhsNode->ruleNum == 29)
+		if(rhsNode->ruleNum == 26)
 		{
 			astTree stringNode = rhsNode->childNode->childNode->childNode->childNode;
 			if(stringNode->ruleNum == 68)
 			{
-				currentString->stringName = idNode->data.token_data;
-				currentString->length = strlen(stringNode->childNode->data.token_data);
-				currentString->nextEntry = malloc(sizeof(struct _stringSizes));
-				currentString = currentString->nextEntry;
-				currentString->nextEntry = NULL;
+				if(idNode->data.token_data != NULL)
+				{
+					currentString->stringName = idNode->data.token_data;
+					currentString->length = strlen(stringNode->childNode->data.token_data);
+					currentString->nextEntry = malloc(sizeof(struct _stringSizes));
+					currentString = currentString->nextEntry;
+					currentString->nextEntry = NULL;
+					currentString->stringName = NULL;
+				}
 			}
 		}
 	}
@@ -276,6 +321,7 @@ void addSymbolTableToList()
 		stList->matrixTable = headMatrix;
 		currentMatrix = headMatrix;
 		stringSizes headString = malloc(sizeof(struct _stringSizes));
+		headString->stringName = NULL;
 		headString->nextEntry = NULL;
 		stList->stringTable = headString;
 		currentString = headString;
@@ -302,6 +348,7 @@ void addSymbolTableToList()
 		stList->table = headEntry;
 		currentEntry = headEntry;
 		stringSizes headString = malloc(sizeof(struct _stringSizes));
+		headString->stringName = NULL;
 		headString->nextEntry = NULL;
 		stList->stringTable = headString;
 		currentString = headString;
@@ -339,6 +386,7 @@ void addSymbolTableForElsePartToList()
 	stList->matrixTable = headMatrix;
 	currentMatrix = headMatrix;
 	stringSizes headString = malloc(sizeof(struct _stringSizes));
+	headString->stringName = NULL;
 	headString->nextEntry = NULL;
 	stList->stringTable = headString;
 	currentString = headString;
@@ -381,6 +429,7 @@ void addSymbolTableForFunctionToList()
 	stList->matrixTable = headMatrix;
 	currentMatrix = headMatrix;
 	stringSizes headString = malloc(sizeof(struct _stringSizes));
+	headString->stringName = NULL;
 	headString->nextEntry = NULL;
 	stList->stringTable = headString;
 	currentString = headString;

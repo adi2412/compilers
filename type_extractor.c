@@ -178,7 +178,7 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 		while(termID != NULL)
 		{
 			astTree factor = termID->childNode;
-			if(factor->ruleNum == 54)
+			if(factor->ruleNum == 48)
 			{
 				// It is a variable. Check it's type.
 				astTree typeNode = factor->childNode;
@@ -308,7 +308,7 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 				checkArithmeticExpression(idName,type,factor);
 			}
 			termID = termID->childNode->sisterNode;
-			if(termID->ruleNum == 52)
+			if(termID->ruleNum == 54)
 				termID = NULL;
 			else
 			{
@@ -323,7 +323,7 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 			}
 		}
 		expression = expression->childNode->sisterNode;
-		if(expression->ruleNum == 49)
+		if(expression->ruleNum == 51)
 		{
 			expression = NULL;
 		}
@@ -349,9 +349,9 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 void checkAssignmentType2()
 {
 	astTree stmtNode = currentASTNode->childNode->childNode;
-	astTree idNodes = stmtNode->childNode;
+	astTree idNodes = stmtNode;
 	astTree rhsNodes = stmtNode->sisterNode;
-	if(rhsNodes->ruleNum == 32)
+	if(rhsNodes->ruleNum == 29)
 	{
 		// It is a size expression for matrix.
 		astTree matrixNode = rhsNodes->childNode->childNode;
@@ -367,7 +367,7 @@ void checkAssignmentType2()
 		idNode = idNodes->childNode->childNode;
 		token type2 = checkTypeInSymbolTable(idNode->data.token_data);
 		idNodes = idNode->sisterNode;
-		if(!(type1 == NUM && type2 == NUM && idNodes->ruleNum == 24))
+		if(!(type1 == NUM && type2 == NUM && idNodes->ruleNum == 33))
 		{
 			// Either the types or not correct or there are one too many identifiers.
 			typeError();
@@ -385,9 +385,9 @@ void checkAssignmentType1()
 	astTree rhsNodes = stmtNode->sisterNode;
 	switch(rhsNodes->ruleNum)
 	{
-		case 29: checkArithmeticExpression(idName,type,rhsNodes);break;// Arithmetic Expression
-		case 30: checkSizeExpression(type,rhsNodes);break;// Size Expression
-		case 31: break; // Function call
+		case 26: checkArithmeticExpression(idName,type,rhsNodes);break;// Arithmetic Expression
+		case 27: checkSizeExpression(type,rhsNodes);break;// Size Expression
+		case 28: break; // Function call
 	}
 
 }
@@ -584,18 +584,24 @@ void printTable(STList headList)
 			entry = entry->nextEntry;
 		}
 		printf("matrix sizes\n");
-		matrixSizes matrices = readList->matrixTable;
-		while(matrices->matrixName != NULL)
+		if(readList->matrixTable->matrixName != NULL)
 		{
-			printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
-			matrices = matrices->nextEntry;
+			matrixSizes matrices = readList->matrixTable;
+			while(matrices->matrixName != NULL)
+			{
+				printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
+				matrices = matrices->nextEntry;
+			}
 		}
-		stringSizes strings = readList->stringTable;
-		printf("string sizes\n");
-		while(strings->stringName != NULL)
+		if(readList->stringTable->stringName != NULL)
 		{
-			printf("%d, %s\n",strings->length,strings->stringName);
-			strings = strings->nextEntry;
+			stringSizes strings = readList->stringTable;
+			printf("string sizes\n");
+			while(strings->stringName != NULL)
+			{
+				printf("%d, %s\n",strings->length,strings->stringName);
+				strings = strings->nextEntry;
+			}
 		}
 		printf("Going to child table\n");
 		if(readList->childList != NULL)
@@ -613,6 +619,6 @@ int typeChecker(astTree astRoot, STList headList)
 	stList = headList;
 	runTypeChecker();
 	printTable(headList);
-	printf("Type checker Ran successfully\n");
+	fprintf(stderr,"Type checker Ran successfully\n");
 	return 0;
 }

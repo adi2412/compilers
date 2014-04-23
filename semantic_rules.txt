@@ -19,9 +19,6 @@
 [ remainingList ] := #( RL [ parameter_list ] ) 
 [ remainingList ] := ? 
 [ declarationStmt ] := #( DS [ type ] [ var_list ] ) 
-[ var_list ] := #( VL ^( ID ID.ent ) [ more_ids ] ) 
-[ more_ids ] := #( MI [ var_list ] ) 
-[ more_ids ] := ? 
 [ assignmentStmt_type1 ] := #( AS1 [ leftHandSide_singleVar ] [ rightHandSide_type1 ] ) 
 [ assignmentStmt_type2 ] := #( AS2 [ leftHandSide_listVar ] [ rightHandSide_type2 ] ) 
 [ leftHandSide_singleVar ] := ^( ID ID.ent ) 
@@ -31,6 +28,9 @@
 [ rightHandSide_type1 ] := %( [ funCallStmt ] ) 
 [ rightHandSide_type2 ] := %( [ sizeExpression ] ) 
 [ rightHandSide_type2 ] := %( [ funCallStmt ] ) 
+[ var_list ] := #( VL ^( ID ID.ent ) [ more_ids ] ) 
+[ more_ids ] := #( MI [ var_list ] ) 
+[ more_ids ] := ? 
 [ sizeExpression ] := #( SE ^( ID ID.ent ) ) 
 [ ifStmt ] := #( IFS [ booleanExpression ] [ stmt ] [ otherStmts ] [ elsePart ] ) 
 [ elsePart ] := #( ELS [ stmt ] [ otherStmts ] ) 
@@ -44,14 +44,14 @@
 [ inputParameterList ] := ? 
 [ listVar ] := #( LV [ inputParameterList ] ) 
 [ listVar ] := ? 
+[ factor ] := #( FC [ arithmeticExpression ] ) 
+[ factor ] := %( [ var ] ) 
 [ arithmeticExpression ] := #( AE [ arithmeticTerm ] [ arithmeticExpression_type2 ] ) 
 [ arithmeticExpression_type2 ] := #( AE2 [ operator_lowPrecedence ] [ arithmeticExpression ] ) 
 [ arithmeticExpression_type2 ] := ? 
 [ arithmeticTerm ] := #( AT [ factor ] [ arithmeticTerm_type2 ] ) 
 [ arithmeticTerm_type2 ] := #( AT2 [ operator_highPrecedence ] [ arithmeticTerm ] )
 [ arithmeticTerm_type2 ] := ? 
-[ factor ] := #( FC [ arithmeticExpression ] ) 
-[ factor ] := %( [ var ] ) 
 [ operator_lowPrecedence ] := ^( PLUS ) 
 [ operator_lowPrecedence ] := ^( MINUS ) 
 [ operator_highPrecedence ] := ^( MUL ) 
