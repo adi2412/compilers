@@ -30,10 +30,11 @@ buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
 // Shows all the different errors.
 // TODO: Figure out the correct implementation of error.
 */
-void showError()
+void showError(char *errtext,int errline)
 {
 	printf("\n\x1b[31mError generated!\n\x1b[0m");
-	exit(0);
+	printf("\n\x1b[31m %s At Line no: %d\n\x1b[0m", errtext,errline);	
+	//exit(0);		//DONT need to exit. will continue after printing error.
 }
 
 FILE *getStream(FILE *fp, buffer B, buffersize k)
@@ -115,11 +116,12 @@ char* joinStrings(char* alp, char* str)
 
 tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 {
-	// Find the function token. This might be incorrect
+	// Find the function token. 
 	if(i==0)
 	{
 		// Name length exceeded
-		showError();
+		char *err= "Function name length exceeded.";
+		showError(err,B->lineNumber);
 		return NULL;
 	}
 	tokenInfo funToken = malloc(sizeof(tokenStruct));
@@ -173,7 +175,8 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 	// Find the identifier token. Return even if it is a keyword as an identifier
 	if(i == 0)
 	{
-		showError();
+		char *err = "Token size passed to getIDToken() is zero.";
+		showError(err, B->lineNumber);
 		return NULL;
 	}
 	tokenInfo idToken = malloc(sizeof(tokenStruct));
@@ -234,7 +237,8 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 	// Find the string text.
 	if(i == 0)
 	{
-		showError();
+		char *err = "Token size passed to getStringToken() is zero.";
+		showError(err, B->lineNumber);
 		return NULL;
 	}
 	tokenInfo stringToken = malloc(sizeof(tokenStruct));
@@ -347,7 +351,8 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		// }
 		else //currentDecimalPlace bw [0,2)
 		{	//eg 24.5 is invalid, need 24.50 
-			showError();
+			char *err = "Invalid real num. Need exactly 2 decimal places.";
+			showError(err,B->lineNumber);
 			free(numToken);
 			//free(alphabet);
 			return NULL;
@@ -660,7 +665,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			{
 				// Not NE token. An error
 				// TODO: Decide error functions
-				showError();
+				char *err = "Bad token. Possible Token: NE .";
+				showError(err, B->lineNumber);
 				++B->fwdPointer;
 				++B->curPointer;
 				++B->charNumber;
@@ -710,7 +716,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				else
 				{
 					// Something else. A Lexical error;
-					showError();
+					char *err = "Lexical error. Possible Token: AND .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -734,7 +741,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				}
 				else{
 					// Lexical error.
-					showError();
+					char *err = "Lexical error. Possible token: OR .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -758,7 +766,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				}
 				else{
 					// Lexical error.
-					showError();
+					char *err = "Lexical error. Possible Token: NOT .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -770,7 +779,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			else
 			{
 				// Some other identifier. A Lexical error;
-				showError();
+				char *err = "Lexical error after .";
+				showError(err, B->lineNumber);
 				B->curPointer = ++curPointer;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
@@ -782,7 +792,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// A Lexical error;
-			showError();
+			char *err = "Lexical Error after .";
+			showError(err,B->lineNumber);
 			B->curPointer = ++curPointer;
 			B->fwdPointer = B->curPointer;
 			B->charNumber = B->fwdPointer;
@@ -835,7 +846,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// Incorrect. Show error.
-			showError();
+			char *err = "Lexical Error. Function names may start only with alphabets.";
+			showError(err, B->lineNumber);
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
 			free(funvalue);
@@ -935,7 +947,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// It is not a token. Lexical error
-			showError();
+			char *err = "Lexical error after \\";
+			showError(err,B->lineNumber);
 			++B->fwdPointer;
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
