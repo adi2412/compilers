@@ -34,3 +34,9 @@ Interface Requirements that need to be followed can be seen [here](http://csis.b
 ? -NULL
 
 ^ -new leaf
+
+####MASM Instr
+masm /Zi code.asm
+link /co code.obj
+enter..
+code.exe

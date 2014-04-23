@@ -32,10 +32,4 @@ tokenInfo getNextToken(FILE *fp, buffer B);
 tokenInfo	lexer(FILE *fp, FILE *dest);
 char* getTokenName(token name);
 
-
-
 #endif
-
-
-
-

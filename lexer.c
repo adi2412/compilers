@@ -30,10 +30,11 @@ buffer curBuff; // Have to globally assign otherwise it doesn't seem to work.
 // Shows all the different errors.
 // TODO: Figure out the correct implementation of error.
 */
-void showError()
+void showError(char *errtext,int errline)
 {
 	printf("\n\x1b[31mError generated!\n\x1b[0m");
-	exit(0);
+	printf("\n\x1b[31m %s At Line no: %d\n\x1b[0m", errtext,errline);	
+	//exit(0);		//DONT need to exit. will continue after printing error.
 }
 
 FILE *getStream(FILE *fp, buffer B, buffersize k)
@@ -115,11 +116,12 @@ char* joinStrings(char* alp, char* str)
 
 tokenInfo getFunctionToken(FILE *fp, buffer B, int i)
 {
-	// Find the function token. This might be incorrect
+	// Find the function token. 
 	if(i==0)
 	{
 		// Name length exceeded
-		showError();
+		char *err= "Function name length exceeded.";
+		showError(err,B->lineNumber);
 		return NULL;
 	}
 	tokenInfo funToken = malloc(sizeof(tokenStruct));
@@ -173,7 +175,8 @@ tokenInfo getIDToken(FILE *fp, buffer B, int i)
 	// Find the identifier token. Return even if it is a keyword as an identifier
 	if(i == 0)
 	{
-		showError();
+		char *err = "Token size passed to getIDToken() is zero.";
+		showError(err, B->lineNumber);
 		return NULL;
 	}
 	tokenInfo idToken = malloc(sizeof(tokenStruct));
@@ -234,7 +237,8 @@ tokenInfo getStringToken(FILE *fp, buffer B, int i)
 	// Find the string text.
 	if(i == 0)
 	{
-		showError();
+		char *err = "Token size passed to getStringToken() is zero.";
+		showError(err, B->lineNumber);
 		return NULL;
 	}
 	tokenInfo stringToken = malloc(sizeof(tokenStruct));
@@ -305,7 +309,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		// Return next token from the next buffer.
 		return getNumberToken(fp, B);
 	}
-	alphabet[i++] = B->buff[B->fwdPointer];
+	// alphabet[i] = B->buff[B->fwdPointer];
 
 
 	while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE)  //UPDATE:how to handle the number size limit?
@@ -347,7 +351,8 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		// }
 		else //currentDecimalPlace bw [0,2)
 		{	//eg 24.5 is invalid, need 24.50 
-			showError();
+			char *err = "Invalid real num. Need exactly 2 decimal places.";
+			showError(err,B->lineNumber);
 			free(numToken);
 			//free(alphabet);
 			return NULL;
@@ -471,66 +476,77 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = OP;
+		token->token_value = "(";
 		return token;
 	}
 	else if(a == ')')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = CL;
+		token->token_value = ")";
 		return token;
 	}
 	else if(a == '[')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQO;
+		token->token_value = "[";
 		return token;
 	}
 	else if(a == ']')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SQC;
+		token->token_value = "]";
 		return token;
 	}
 	else if(a == ';')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SEMICOLON;
+		token->token_value = ";";
 		return token;
 	}
 	else if(a == ',')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = COMMA;
+		token->token_value = ",";
 		return token;
 	}
 	else if(a == '+')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = PLUS;
+		token->token_value = "+";
 		return token;
 	}
 	else if(a == '-')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = MINUS;
+		token->token_value = "-";
 		return token;
 	}
 	else if(a == '*')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = MUL;
+		token->token_value = "*";
 		return token;
 	}
 	else if(a == '/')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = DIV;
+		token->token_value = "/";
 		return token;
 	}
 	else if(a == '@')
 	{
 		tokenInfo token = makeSingleToken(B);
 		token->token_name = SIZE;
+		token->token_value = "@";
 		return token;
 	}
 	// Check for comments token and safely ignore
@@ -587,16 +603,18 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			if(a == '>')
 			{
 				token->token_name = GE;
-				B->curPointer = B->fwdPointer;
+				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = ">=";
 				free(nextToken);
 				return token;
 			}
 			else
 			{
 				token->token_name = LE;
-				B->curPointer = B->fwdPointer;
+				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = "<=";
 				free(nextToken);
 				return token;
 			}
@@ -612,6 +630,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				B->curPointer = curPointer + 1;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = ">";
 				free(nextToken);
 				return token;
 			}
@@ -622,6 +641,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				B->curPointer = curPointer + 1;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
+				token->token_value = "<";
 				free(nextToken);
 				return token;
 			}
@@ -639,7 +659,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// EQ token.
 			token->token_name = EQ;
-			B->charNumber = B->fwdPointer;
+			token->token_value = "==";
+			B->charNumber = ++B->fwdPointer;
 			free(nextToken);
 			return token;
 		}
@@ -650,6 +671,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			{
 				// It is the NE token.
 				token->token_name = NE;
+				token->token_value = "=/=";
 				++B->fwdPointer;
 				++B->curPointer;
 				++B->charNumber;
@@ -660,7 +682,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			{
 				// Not NE token. An error
 				// TODO: Decide error functions
-				showError();
+				char *err = "Bad token. Possible Token: NE .";
+				showError(err, B->lineNumber);
 				++B->fwdPointer;
 				++B->curPointer;
 				++B->charNumber;
@@ -675,6 +698,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			token->token_name = ASSIGNOP;
 			// Lost the next token. Need to generate again.
 			B->curPointer = ++curPointer;
+			token->token_value = "=";
 			B->fwdPointer = B->curPointer;
 			B->charNumber = B->fwdPointer;
 			free(nextToken);
@@ -700,6 +724,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// AND token.
 					token->token_name = AND;
+					token->token_value = ".and.";
 					// Increment current and fwd pointer.
 					++B->fwdPointer;
 					++B->curPointer;
@@ -710,7 +735,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				else
 				{
 					// Something else. A Lexical error;
-					showError();
+					char *err = "Lexical error. Possible Token: AND .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -726,6 +752,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// OR token.
 					token->token_name = OR;
+					token->token_value = ".or.";
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -734,7 +761,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				}
 				else{
 					// Lexical error.
-					showError();
+					char *err = "Lexical error. Possible token: OR .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -750,6 +778,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				{
 					// NOT token.
 					token->token_name = NOT;
+					token->token_value = ".not.";
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -758,7 +787,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 				}
 				else{
 					// Lexical error.
-					showError();
+					char *err = "Lexical error. Possible Token: NOT .";
+					showError(err, B->lineNumber);
 					++B->fwdPointer;
 					++B->curPointer;
 					++B->charNumber;
@@ -770,7 +800,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			else
 			{
 				// Some other identifier. A Lexical error;
-				showError();
+				char *err = "Lexical error after .";
+				showError(err, B->lineNumber);
 				B->curPointer = ++curPointer;
 				B->fwdPointer = B->curPointer;
 				B->charNumber = B->fwdPointer;
@@ -782,7 +813,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// A Lexical error;
-			showError();
+			char *err = "Lexical Error after .";
+			showError(err,B->lineNumber);
 			B->curPointer = ++curPointer;
 			B->fwdPointer = B->curPointer;
 			B->charNumber = B->fwdPointer;
@@ -835,7 +867,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// Incorrect. Show error.
-			showError();
+			char *err = "Lexical Error. Function names may start only with alphabets.";
+			showError(err, B->lineNumber);
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
 			free(funvalue);
@@ -902,6 +935,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		char* numvalue = (char*)malloc((1+NUMSIZE)*sizeof(char));
 		tokenInfo numToken = getNumberToken(fp, B);
 		token->token_name = numToken->token_name; //whether RealNum or IntNum.
+		numvalue[0] = a;
 		token->token_value = joinStrings(numvalue,numToken->token_value);
 		B->curPointer = B->fwdPointer;
 		B->charNumber = B->fwdPointer;
@@ -934,7 +968,8 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		else
 		{
 			// It is not a token. Lexical error
-			showError();
+			char *err = "Lexical error after \\";
+			showError(err,B->lineNumber);
 			++B->fwdPointer;
 			B->curPointer = B->fwdPointer;
 			B->charNumber = B->fwdPointer;
@@ -1085,11 +1120,9 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	else{
 		head = tokens;
 		printf("%s ",getTokenName(tokens->token_name));
-		fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(tokens->token_name),getLexemeName(tokens),tokens->lineNumber,tokens->charNumber);
-		fprintf(dest,"\n");
-		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID || tokens->token_name == NUM || tokens->token_name == RNUM)
 		{
-			printf("(%s) ",tokens->token_value);
+			printf("(\x1b[37m%s\x1b[0m) ",tokens->token_value);
 		}
 		tokens->nextToken = NULL;
 	}
@@ -1108,20 +1141,16 @@ tokenInfo lexer(FILE *source, FILE* dest)
 		else
 		{
 			tokens->nextToken = nextTokens;
-			//printf("%p is the address\n", curBuff);
 			if(nextTokens->lineNumber != lineNumber)
 			{
 				printf("\n");
-				fprintf(dest,"\n");
 				//curBuff->lineNumber = tokens->lineNumber;
 				++lineNumber;
 			}
 			printf("%s ",getTokenName(nextTokens->token_name));
-			fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(nextTokens->token_name),getLexemeName(nextTokens),nextTokens->lineNumber,nextTokens->charNumber);
-			fprintf(dest,"\n");
 			if(nextTokens->token_name == ID || nextTokens->token_name == STR || nextTokens->token_name == FUNID)
 			{
-				printf("(%s) ",nextTokens->token_value);
+				printf("(\x1b[37m%s\x1b[0m) ",nextTokens->token_value);
 			}
 			tokens = tokens->nextToken;
 			tokens->nextToken = NULL;
@@ -1129,61 +1158,6 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	}
 	tokens = head;
 	printf("\n");
-	fprintf(dest,"\n");
 	fclose(source);
 	return head;
 }
-// int main()
-// {
-// 	FILE *source;
-// 	source = fopen("test.txt","r");
-// 	tokenInfo tokens;
-// 	buffer firstBuff = malloc(sizeof(buffStruct));	
-// 	firstBuff->curPointer = 0;
-// 	firstBuff->fwdPointer = 0;
-// 	firstBuff->charNumber = 1;
-// 	firstBuff->lineNumber = 1;
-// 	buffer secondBuff = malloc(sizeof(buffStruct));
-// 	secondBuff->curPointer = 0;
-// 	secondBuff->fwdPointer = 0;
-// 	secondBuff->charNumber = 1;
-// 	secondBuff->lineNumber = 1;
-// 	firstBuff->nextBuffer = secondBuff;
-// 	secondBuff->nextBuffer = firstBuff;
-// 	int lineNumber = 1;
-// 	// Initialise the first buffer stream
-// 	getStream(source, firstBuff, BUFFERSIZE);
-// 	curBuff = firstBuff; // Current buffer being used.
-// 	if(firstBuff->nextBuffer == NULL)
-// 	{
-// 		return 0;
-// 	}
-// 	while(curBuff->buff[curBuff->curPointer] != EOF)
-// 	{
-// 		tokens = getNextToken(source, curBuff);
-// 		if(tokens == NULL)
-// 		{
-// 			// End of file reached. Stop here.
-// 			break;
-// 		}
-// 		else
-// 		{
-// 			tokens->nextToken = malloc(sizeof(tokenStruct));
-// 			//printf("%p is the address\n", curBuff);
-// 			if(tokens->lineNumber != lineNumber)
-// 			{
-// 				printf("\n");
-// 				//curBuff->lineNumber = tokens->lineNumber;
-// 				++lineNumber;
-// 			}
-// 			printf("%s ",getTokenName(tokens->token_name));
-// 			if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
-// 				printf("(%s) ",tokens->token_value);
-// 			tokens = tokens->nextToken;
-// 			tokens->nextToken = NULL;
-// 		}
-// 	}
-// 	printf("\n");
-// 	fclose(source);
-// 	return 0;
-// }

@@ -16,14 +16,19 @@
 #include "first_follow_gen.h"
 #include "parser.h"
 
+#define ERRLINESIZE 200
 parseTable PT[NONTERMINALS][TERMINALS];
 stack head;
 tree currentNode;
 tree root;
 
-void error(int d)
+void showPError(char *errtext,int errline)
 {
-	printf("An error was generated at %d\n",d);
+	printf("\n\x1b[31mParsing error.\x1b[0m");
+	if ( errline != -1)
+	printf("\n\x1b[31m%sAt line %d\n\x1b[0m", errtext,errline);
+	else
+	printf("\n\x1b[31m%s\n\x1b[0m", errtext);
 	exit(0);
 }
 
@@ -58,8 +63,11 @@ void createParseTable(nonterm nonTerm)
 			{
 				if(PT[i][j].ruleNumber != 0)
 				{
-					fprintf(stderr,"There are two clashing rules");
-					exit(0);
+					//fprintf(stderr,"There are two clashing rules");
+					//exit(0);
+					char *err =	malloc(sizeof(char)*ERRLINESIZE);
+					sprintf(err,"There are two clasing rules.");
+					showPError(err,-1);
 				}
 				PT[i][j].ruleNumber = firstSet[j]->ruleNum;
 			}
@@ -133,7 +141,6 @@ void pop()
 	stack stackItem = head->nextElement;
 	free(head);
 	head = stackItem;
-	printf("Top of stack now has %d(%d)",head->element.tokValue,head->element.nontermValue);
 }
 
 void push(terminal el)
@@ -162,7 +169,6 @@ void pushItems(terminals terms)
 	{
 		aboveItem->nextElement = head;
 		head = newTopItem;
-		printf("Top of stack now has %d(%d)",head->element.tokValue,head->element.nontermValue);
 	}
 }
 
@@ -170,18 +176,17 @@ void pushItems(terminals terms)
 
 /*************** Tree functions *******************/
 
-
+/*
+// Since the stack and the input terminal have matched,
+// fill in some of the token data into the parse tree,
+// and move on to the next node.
+*/
 void goToNextNode(tokenInfo token)
 {
 	if(currentNode->element.tokValue == token->token_name)
 	{
-		printf("Add data to the node\n");
-		if(token->token_name == ID || token->token_name == STR || token->token_name == FUNID)
+		if(token->token_name == ID || token->token_name == STR || token->token_name == FUNID || token->token_name == NUM || token->token_name == RNUM)
 			currentNode->element.token_data = token->token_value;
-	}
-	else
-	{
-		printf("Data not being added\n");
 	}
 	tree sister = currentNode->sisterNode;
 	tree parent = currentNode->parentNode;
@@ -199,9 +204,7 @@ void goToNextNode(tokenInfo token)
 			sister = parent->sisterNode;
 			parent = parent->parentNode;
 		}
-		fprintf(stderr, "Hello there!\n");
 	}
-	printf("New current node from sister is %d",sister->element.nontermValue);
 	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
 	{
 		currentNode = sister;
@@ -213,6 +216,10 @@ void goToNextNode(tokenInfo token)
 	}
 }
 
+/*
+// Finds the next node to work on, whether it is a sister
+// node or a parent node.
+*/
 void findNextNode()
 {
 	tree sister = currentNode->sisterNode;
@@ -231,9 +238,7 @@ void findNextNode()
 			sister = parent->sisterNode;
 			parent = parent->parentNode;
 		}
-		fprintf(stderr, "Hey there!\n");
 	}
-	printf("New current node from sister is %d",sister->element.nontermValue);
 	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
 	{
 		currentNode = sister;
@@ -245,17 +250,17 @@ void findNextNode()
 	}
 }
 
+/*
+// Adds a child node to the current tree node through the
+// RHS of the grammmar rules
+*/
 void addChildNodes(rule rule)
 {
 	nonTerminal LHSTerm = rule->nonterm_value;
 	if(LHSTerm == currentNode->element.nontermValue)
 	{
-		printf("adding rule number to parse tree %d\n",rule->ruleNum);
 		currentNode->ruleNum = rule->ruleNum;
 	}
-	else
-		printf("not adding rule numbers\n");
-	printf("before adding children, current node is: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
 	tree treeNode = malloc(sizeof(struct _tree));
 	treeNode->parentNode = currentNode;
 	treeNode->childNode = NULL;
@@ -285,14 +290,12 @@ void addChildNodes(rule rule)
 		term.tokValue = terms->term_value.tokValue;
 		term.token_data = "";
 		newNode->element = term;
-		printf("Adding sister node %d(%d)\n",newNode->element.tokValue,newNode->element.nontermValue);
 		prevNode = newNode;
 		terms = terms->nextTerm;
 	}
 	if(treeNode->element.tokValue != NIL)
 	{
 		currentNode = treeNode;
-		printf("current node: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
 	}
 	else
 	{
@@ -302,9 +305,11 @@ void addChildNodes(rule rule)
 
 /*************** End ********************/
 
+/*
+// Finds the appropriate rule for the given rule number.
+*/
 rule findRule(int ruleNum, rule headRule)
 {
-	fprintf(stderr, "Here!!!!\n");
 	int i = 1;
 	rule ruleList;
 	ruleList = headRule;
@@ -316,85 +321,44 @@ rule findRule(int ruleNum, rule headRule)
 	return ruleList;
 }
 
-int printTree(tree node)
+void printTree(tree node)
 {
 	if(node == NULL)
 	{
-		fprintf(stderr, "It is null\n");
-		return 0;
+		return;
 	}
-	else
+	while(node!= NULL)
 	{
-		fprintf(stderr,"Starting to print\n");
 		if(node->element.flag)
 		{
-			fprintf(stderr,"Node: %s(%d)\n",getNonTermValue(node->element.nontermValue),node->ruleNum);
-			tree childNode = node->childNode;
-			if(childNode == NULL)
-			{
-				fprintf(stderr,"No child nodes\n");
-				if(node->sisterNode != NULL)
-					printTree(node->sisterNode);
-				else
-				{
-					tree parentSisterNode = node->parentNode->sisterNode;
-					while(parentSisterNode == NULL)
-					{
-						node = node->parentNode;
-						if(node == NULL)
-							return 0;
-						else
-							parentSisterNode = node->parentNode->sisterNode;
-					}
-					printTree(parentSisterNode);
-				}
-			}
-			else
-			{
-				fprintf(stderr,"child nodes\n");
-				printTree(childNode);
-			}
+			printf("\x1b[37m\x1b[1m%s \x1b[0m",getNonTermValue(node->element.nontermValue));
 		}
 		else
 		{
-			// Terminal.
-			fprintf(stderr,"Leaf Node: %s", getTokenName(node->element.tokValue));
-			if(node->element.tokValue == ID || node->element.tokValue == STR || node->element.tokValue == FUNID)
-				fprintf(stderr,"(%s)",node->element.token_data);
-			fprintf(stderr,"\n");
-			if(node->sisterNode != NULL)
-			{
-				printTree(node->sisterNode);
-			}
-			else
-			{
-				if(node->parentNode == NULL)
-					return 0;
-				else
-				{
-					while(node->parentNode->sisterNode == NULL)
-					{
-						if(node->parentNode == NULL)
-							return 0;
-						else
-						{
-							node = node->parentNode;
-							if(node->parentNode == NULL)
-								return 0;
-						}
-					}
-					tree parentSisterNode = node->parentNode->sisterNode;
-					if(parentSisterNode != NULL)
-						printTree(parentSisterNode);
-					else
-						return 0;
-				}
-			}
+			printf("\x1b[33m%s \x1b[0m",getTokenName(node->element.tokValue));
+			if(node->sisterNode == NULL)
+				printf("\n");
 		}
-	}
-	return 0;
+		if(node->childNode != NULL)
+		{
+			printf("---> ");
+			printTree(node->childNode);
+		}
+		if(node->sisterNode != NULL)
+		{
+			node = node->sisterNode;
+		}
+		else
+			node = NULL;
+	}	
 }
 
+/*
+// The main function called by the driver.
+// params-
+//		input: Genertaed tokens list, non terminals and their 			first, follow sets, and the grammar rules.
+//		output: ParseTree or error if there is a parsing error
+*/
 tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 {
 	nonterm nonTerms = nts;
@@ -407,14 +371,10 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 	tokenInfo readToken;
 	// tokens nextToken;
 	readToken = tokens;
-	printf("%d\n",readToken->token_name);
 
 	while(head->element.tokValue != DOL && readToken != NULL)
 	{
-		printf("Working on token %d", readToken->token_name);
-		// if(readToken->token_value != NULL)
-		// 	printf(" with value %s", readToken->token_value);
-		printf("\n\n\n");
+		// Keep parsing till either the stack or tokens run out.
 		if(!head->element.flag)
 		{
 			if(head->element.tokValue == readToken->token_name)
@@ -425,15 +385,21 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 					currentNode->element.lineNumber = readToken->lineNumber;
 					currentNode->element.charNumber = readToken->charNumber;
 				}
-				printf("Popping %d\n", head->element.tokValue);
 				goToNextNode(readToken);
 				readToken = readToken->nextToken;
 			}
 			else
 			{
 				// Some other terminal in input code.
-				printf("wtf? %d and %d\n",head->element.tokValue,readToken->token_name);
-				error(1);
+				char *err = malloc(sizeof(char)*ERRLINESIZE);
+				if(head->element.flag)		//nonterminal
+				sprintf(err,"Wrong token. Expected %s instead of %s.\n",getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+				else
+				sprintf(err,"Wrong token. Expected %s instead of %s.\n",getTokenName(head->element.tokValue),getTokenName(readToken->token_name));
+				showPError(err,readToken->lineNumber);
+				///err soln
+				//goToNextNode(readToken);
+				//readToken = readToken->nextToken;
 			}
 		}
 		else
@@ -442,8 +408,9 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			if(PT[head->element.nontermValue][readToken->token_name].ruleNumber == 0)
 			{
 				// No entry in Parse Table.
-				printf("no entry for %d and %d",head->element.nontermValue,readToken->token_name);
-				error(2);
+				char *err = malloc(sizeof(char)*ERRLINESIZE);
+				sprintf(err,"Invalid term %s found ",readToken->token_value);
+				showPError(err,readToken->lineNumber);
 				
 			}
 			else
@@ -452,8 +419,10 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 				int ruleNumber = PT[head->element.nontermValue][readToken->token_name].ruleNumber;
 				if(ruleNumber == 0)
 				{
-					printf("Kuch toh gadbad hai boss\n");
-					exit(0);
+					char *err = malloc(sizeof(char)*ERRLINESIZE);
+					sprintf(err,"Entry not found in parse table for %s and %s.", getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+					showPError(err, readToken->lineNumber);
+					//exit(0);
 				}
 				rule correctRule = findRule(ruleNumber, headRule);
 				pop();
@@ -468,14 +437,16 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		if(head->element.tokValue == DOL)
 		{
 			// Successful parsing.
-			printTree(root);
+			return root;
 		}
 		else
 		{
 			// Parsing not successful.
-			printf("%d\n",head->element.tokValue);
-			printf("%d\n",head->element.nontermValue);
-			error(3);
+			char *err =	malloc(sizeof(char)*ERRLINESIZE);
+			sprintf(err,"Parsing not successful. token: %s, nonterm: %s,", getTokenName(head->element.tokValue),getNonTermValue(head->element.nontermValue));
+			//printf("%d\n",head->element.tokValue);
+			//printf("%d\n",head->element.nontermValue);
+			showPError(err,-1);
 		}
 	}
 	else if(head->element.tokValue == DOL)
@@ -483,13 +454,15 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		if(readToken != NULL)
 		{
 			// Stack empty but input still exists.
-			printf("%d\n",readToken->token_name);
-			error(4);
+			char *err =	malloc(sizeof(char)*ERRLINESIZE);
+			sprintf(err,"Stack empty, but input still exists. token: %s.",getTokenName(readToken->token_name));
+			//printf("%d\n",readToken->token_name);
+			showPError(err,readToken->lineNumber);
 		}
 		else
 		{
 			// Succesful parsing.
-			printTree(root);
+			return root;
 		}
 	}
 

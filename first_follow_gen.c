@@ -251,22 +251,11 @@ nonterm initialiseNonTerminals()
 {
 	// Initialise all pointers to NULL.
 	int i = 0;
-	fprintf(stderr,"%d\n",NONTERMINALS);
 	nonterm nonTermHead = malloc(NONTERMINALS*sizeof(NT));
 	for(;i<NONTERMINALS;++i)
 	{
 		nonTermHead[i] = NULL;
 	}
-	// Initialise their first and follow sets to NULL.
-	// for(i=0;i<NONTERMINALS;++i)
-	// {
-	// 	int j;
-	// 	for(j=0;j<TERMINALS;++j)
-	// 	{
-	// 		nonTermHead[i]->firstSet[j] = NULL;
-	// 		nonTermHead[i]->followSet[j] = NULL;
-	// 	}
-	// }
 	return nonTermHead;
 }
 
@@ -537,10 +526,6 @@ follow makeFollowForTerm(nonTerminal nonTerm, nonterm head)
 					if(RHSTerms->nextTerm->term_value.nontermValue != nonTerm)
 					{
 						nonTerminal otherNonTerm = RHSTerms->nextTerm->term_value.nontermValue;
-						if(head[otherNonTerm] != NULL)
-							fprintf(stderr,"%d\n",otherNonTerm);
-						else
-							fprintf(stderr, "Kya Chutiyapa Hai %d\n",otherNonTerm);
 						head[nonTerm]->followSet = addFollowsFromFirst(head[nonTerm]->followSet,head[otherNonTerm]->firstSet,ruleList);
 						if(!(head[otherNonTerm]->nullable)) flag = 1;
 					}
@@ -733,22 +718,7 @@ nonterm ffg(FILE* fp)
 		// Keep computing first sets and reading grammar rules
 		gramRule->ruleNum = ruleNum++;
 		gramRule->nextRule = readAndDefineGrammarRule(rules);
-		fprintf(fp,"Rule Number %d) %s-->",gramRule->ruleNum,getNonTermValue(gramRule->nonterm_value));
 		terminals readterms = gramRule->termSet;
-		while(readterms != NULL)
-		{
-			if(readterms->term_value.flag)
-			{
-				// Non terminal
-				fprintf(fp,"%s\t",getNonTermValue(readterms->term_value.nontermValue));
-			}
-			else
-			{
-				fprintf(fp,"%s(%d)\t",getTokenName(readterms->term_value.tokValue),readterms->term_value.tokValue);
-			}
-			readterms = readterms->nextTerm;
-		}
-		fprintf(fp,"\n");
 		gramRule = gramRule->nextRule;
 	}
 
@@ -773,12 +743,6 @@ nonterm ffg(FILE* fp)
 		if(gramRule == NULL) break;
 		i = gramRule->nonterm_value;
 	}
-	//fprintf(stderr,"first sets calculated");
-
-	// if(nonTerm[arithmeticExpression_type2] != NULL)
-	// 	fprintf(stderr,"%d \n",arithmeticExpression_type2);
-	// else
-	// 	fprintf(stderr, "Kya bakwaas hai bhai\n");
 	
 	gramRule = headRule;
 	// Compute the follow sets.
@@ -804,38 +768,6 @@ nonterm ffg(FILE* fp)
 
 	
 	j = 0;
-	for(;j<NONTERMINALS-1;++j)
-	{
-		fprintf(fp,"For %s ",getNonTermValue(j));
-		fprintf(fp,"First set:\t");
-		int k =0;
-		for(;k<TERMINALS-2;++k)
-		{
-			if(nonTerm[j] != NULL)
-			{
-				if(nonTerm[j]->firstSet[k] != NULL)
-				{
-					fprintf(fp,"%s(Rule no: %d)\t",getTokenName(nonTerm[j]->firstSet[k]->token_name),nonTerm[j]->firstSet[k]->ruleNum);
-				}
-			}
-		}
-		fprintf(fp,"\n");
-		fprintf(fp,"Follow set:\t");
-		fprintf(stderr,"Computing follow set\n");
-		k = 0;
-		for(;k<TERMINALS;++k)
-		{
-			if(nonTerm[j] != NULL)
-			{
-				if(nonTerm[j]->followSet[k] != NULL)
-				{
-					fprintf(fp,"%s(Rule No: %d)\t",getTokenName(nonTerm[j]->followSet[k]->token_name),nonTerm[j]->followSet[k]->ruleNum);
-				}
-			}
-		}
-		fprintf(fp,"\n");
-		fprintf(fp,"\n");
-	}
 	fclose(rules);
 	// return 1;
 

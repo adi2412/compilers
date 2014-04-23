@@ -13,17 +13,20 @@ all:
 	gcc -o stage1exe driver.o first_follow_gen.o lexer.o parser.o sem_parser.o ast.o symbol_table.o type_extractor.o semantic_analyzer.o
 
 
-run:
-	./stage1exe test.txt parsetreeOutFile.txt
-	
-lexer:
-	gcc -o lexer lexer.c
+run_test1:
+	./stage1exe testcase1.txt parsetreeOutFile.txt
 
-parser:
-	gcc -o parser parser.c lexer.c
+run_test2:
+	./stage1exe testcase2.txt parsetreeOutFile.txt
 
-ffgen:
-	gcc -o ffgen first_follow_gen.c
+run_test3:
+	./stage1exe testcase3.txt parsetreeOutFile.txt
 
-driver:
-	gcc -o compiler driver.c parser.c lexer.c
+run_test4:
+	./stage1exe testcase4.txt parsetreeOutFile.txt
+
+run_test5:
+	./stage1exe testcase5.txt parsetreeOutFile.txt
+
+run_test6:
+	./stage1exe testcase6.txt parsetreeOutFile.txt

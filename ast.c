@@ -5,7 +5,7 @@
 // Second semester 2014
 */
 
-// Contains functions for parsing
+// Contains functions for abstract syntax tree generation
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,12 +15,20 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
+#include "symbol_table.h"
+#include "type_extractor.h"
+#include "semantic_analyzer.h"
 
 astTree astRoot;
 astTree currentASTNode;
 tree currentNode;
 semRuleArray semRules;
 
+/*
+// Initialises the ast structure with default values.
+*/
 void initialiseASTTree()
 {
 	astTree treeNode = malloc(sizeof(struct _astTree));
@@ -41,6 +49,10 @@ void initialiseASTTree()
 	astRoot = treeNode;
 }
 
+
+/*
+// Traverse to next NonTerminal Node for AST
+*/
 void goToNextNonTerminalASTNode()
 {
 	if(currentASTNode->childNode != NULL)
@@ -81,6 +93,9 @@ void goToNextNonTerminalASTNode()
 	}
 }
 
+/*
+//	Traverse to the next NonTerminal Node
+*/
 void goToNextNonTerminalNode()
 {
 	if(currentNode->childNode != NULL)
@@ -121,6 +136,9 @@ void goToNextNonTerminalNode()
 	}
 }
 
+/*
+// find and goto the next AST node
+*/
 void findNextASTNode()
 {
 	astTree sister = currentASTNode->sisterNode;
@@ -141,7 +159,9 @@ void findNextASTNode()
 	currentASTNode = sister;
 }
 
-
+/**
+ * [addChildASTNodes description: adds child AST nodes to the ast rule]
+ */
 void addChildASTNodes(semrule rule)
 {
 	sems semTerms = rule->semanticsSet;
@@ -158,7 +178,6 @@ void addChildASTNodes(semrule rule)
 		childNodes = childNodes->sisterNode;
 		if(childNodes == NULL)
 		{
-			fprintf(stderr,"It got to NULL\n");
 			exit(0);
 		}
 	}
@@ -181,13 +200,10 @@ void addChildASTNodes(semrule rule)
 			childNodes = childNodes->sisterNode;
 			if(childNodes == NULL)
 			{
-				fprintf(stderr,"It got to NULL\n");
 				exit(0);
 			}
 		}
-		printf("%s == %s\n",getTokenName(semTerm.leafName),getTokenName(childNodes->element.tokValue));
 		newNode->data = childNodes->element;
-		printf("Adding data %s for %s\n",treeNode->data.token_data,getTokenName(newNode->data.tokValue));
 		// childNodes = childNodes->sisterNode;
 		prevNode->sisterNode = newNode;
 		prevNode = newNode;
@@ -211,6 +227,11 @@ void addChildASTNodes(semrule rule)
 	}
 }
 
+/**
+ * [createASTTreeFromParseTree description]
+ * create AST Tree from the Parse tree current node
+ * recursively called for each node.
+ */	
 void createASTTreeFromParseTree()
 {
 	if(currentNode == NULL)
@@ -264,97 +285,62 @@ void createASTTreeFromParseTree()
 	}
 }
 
+/**
+ * [printASTTree description]
+ * 	print the AST tree to terminal. Uses appropriate color formatting.
+ * 	recursively called for each node.
+ * @param node
+ * 	the AST Tree node which is to be printed
+ */
 void printASTTree(astTree node)
 {
 	if(node == NULL)
 	{
 		return;
 	}
-	else
+	while(node!= NULL)
 	{
 		if(!node->element.isLeaf)
 		{
-			printf("Node: %s(%d)(%s)\n",getNonTermValue(node->element.nontermValue),node->ruleNum,node->data.token_data);
-			astTree childNode = node->childNode;
-			if(childNode == NULL)
-			{
-				if(node->sisterNode != NULL)
-					printASTTree(node->sisterNode);
-				else
-				{	
-					if(node->parentNode == NULL)
-					return;
-					else
-					{
-						while(node->parentNode->sisterNode == NULL)
-						{
-							if(node->parentNode == NULL)
-								return;
-							else
-							{
-								node = node->parentNode;
-								if(node->parentNode == NULL)
-									return;
-							}
-						}
-						astTree parentSisterNode = node->parentNode->sisterNode;
-						if(parentSisterNode != NULL)
-							printASTTree(parentSisterNode);
-						else
-							return;
-					}
-				}
-			}
-			else
-			{
-				printASTTree(childNode);
-			}
+			printf("\x1b[37m\x1b[1m%s \x1b[0m",getNonTermValue(node->element.nontermValue));
 		}
 		else
 		{
-			printf("Leaf node: %s(%s)", getTokenName(node->element.leafName),node->data.token_data);
-			if(node->element.leafName== ID || node->element.leafName == STR || node->element.leafName == FUNID)
-				printf("(%s)",node->element.leafValue);
-			printf("\n");
-			if(node->sisterNode != NULL)
-			{
-				printASTTree(node->sisterNode);
-			}
-			else
-			{
-				if(node->parentNode == NULL)
-					return;
-				else
-				{
-					while(node->parentNode->sisterNode == NULL)
-					{
-						if(node->parentNode == NULL)
-							return;
-						else
-						{
-							node = node->parentNode;
-							if(node->parentNode == NULL)
-								return;
-						}
-					}
-					astTree parentSisterNode = node->parentNode->sisterNode;
-					if(parentSisterNode != NULL)
-						printASTTree(parentSisterNode);
-					else
-						return;
-				}
-			}
+			printf("\x1b[33m%s \x1b[0m",getTokenName(node->element.leafName));
+			if(node->sisterNode == NULL)
+				printf("\n");
 		}
+		if(node->childNode != NULL)
+		{
+			printf("---> ");
+			printASTTree(node->childNode);
+		}
+		if(node->sisterNode != NULL)
+		{
+			node = node->sisterNode;
+		}
+		else
+			node = NULL;
 	}
-	return;
 }
 
+/**
+ * [ast description]
+ * 	main function for ast module
+ * 	invokes the ast structure initialiser, and the invokes the parse tree
+ * 	to ast tree generator
+ * @param  headRule
+ * 	head node of the semrule array structure
+ * @param  root
+ * 	root of the parse tree
+ * @return
+ * 	returns the generated AST tree root.
+ */
 astTree ast(semRuleArray headRule, tree root)
 {
 	initialiseASTTree();
 	currentNode = root;
 	semRules = headRule;
 	createASTTreeFromParseTree();
-	printASTTree(astRoot);
 	return astRoot;
 }

@@ -15,8 +15,11 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
+#include "semantic_analyzer.h"
 
 astTree currentASTNode;
 STList stList;
@@ -28,12 +31,15 @@ stringSizes currentString;
 int curScope;
 int scopeIdentifier;
 
-void STError()
+void STError(int num,char* name,int lineNum,int charNum)
 {
-	fprintf(stderr,"An STError was generated\n");
-	exit(0);
+	printf("\x1b[31mSemantic Error 2: Identifier \x1b[37m\x1b[1m%s\x1b[31m must be declared before use on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);
 }
 
+/*
+// Checks whether a specific id already exists in 
+// symbol table
+*/
 int doesExistInSymbolTable(char* name)
 {
 	STable entry = stList->table;
@@ -47,7 +53,6 @@ int doesExistInSymbolTable(char* name)
 	}
 	while(strcmp(entry->data->value, name))
 	{
-		printf("%s\n",entry->data->value);
 		entry = entry->nextEntry;
 		if(entry->data == NULL)
 		{
@@ -56,12 +61,14 @@ int doesExistInSymbolTable(char* name)
 				return 0;
 			entry = readList->parentList->table;
 			readList = readList->parentList;
-			printf("Going to parent\n");
 		}
 	}
 	return 1;
 }
 
+/*
+// Converts ID, and data to one specific standard token
+*/
 token convertType(token type)
 {
 	if(type == INT)
@@ -75,22 +82,37 @@ token convertType(token type)
 	return INVALID;
 }
 
-token checkTypeInFormedSymbolTable(char* name)
+/*
+// Gets the type of a variable from the symbol table.
+*/
+token checkTypeInFormedSymbolTable(char* name, int lineNum,int charNum)
 {
 	STable entry = stList->table;
+	STList readList = stList;
+	if(entry->data == NULL)
+	{
+		if(readList->parentList == NULL)
+		{
+			STError(0,name,lineNum,charNum);
+			return INVALID;
+		}
+		entry = readList->parentList->table;
+		readList = readList->parentList;
+	}
 	while(strcmp(entry->data->value,name))
 	{
 		entry = entry->nextEntry;
 		if(entry->data == NULL)
 		{
 			// All entries in current scope over. Check above scope.
-			if(stList->parentList == NULL)
+			if(readList->parentList == NULL)
 			{
-				STError();
+				STError(0,name,lineNum,charNum);
 				entry = NULL;
-				break;
+				return INVALID;
 			}
-			entry = stList->parentList->table;
+			entry = readList->parentList->table;
+			readList = readList->parentList;
 		}
 	}
 	return convertType(entry->data->type);
@@ -128,17 +150,19 @@ void initialiseSymbolTable()
 	headList = stList;
 }
 
+/*
+// Adds a new variable to the symbol table.
+*/
 void addToCurrentSymbolTable(astTree data, token type,int idType)
 {
 	if(doesExistInSymbolTable(data->data.token_data))
 	{
 		// Same name already declared before.
-		fprintf(stderr, "Name declared before\n");
-		exit(0);
+		printf("\x1b[31mSemantic Error 2: Identifier \x1b[37m\x1b[1m%s\x1b[31m has been declared twice on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",data->data.token_data,data->data.lineNumber,data->data.charNumber);
+		return;
 	}
 	currentEntry->scope = curScope;
 	currentEntry->offset = 0;
-	fprintf(stderr, "Upto here\n");
 	currentEntry->lineNumber = data->data.lineNumber;
 	currentEntry->charNumber = data->data.charNumber;
 	currentEntry->type = idType;
@@ -146,8 +170,6 @@ void addToCurrentSymbolTable(astTree data, token type,int idType)
 	currentEntry->data = malloc(sizeof(struct _identifier));
 	currentEntry->data->symbol = data->data.tokValue; // Is there a need for this?
 	currentEntry->data->value = data->data.token_data;
-	printf("Adding data: %s\n",currentEntry->data->value);
-	printf("In the list head: %s\n",stList->table->data->value);
 	currentEntry->data->type = type;
 	currentEntry->nextEntry = malloc(sizeof(struct _STable));
 	currentEntry = currentEntry->nextEntry;
@@ -155,10 +177,13 @@ void addToCurrentSymbolTable(astTree data, token type,int idType)
 	currentEntry->data = NULL;
 }
 
+/*
+// Add all the variables on the left hand side of
+// assignment type2 statement to symbol table.
+*/
 void findIdentifiers()
 {
 	currentASTNode = currentASTNode->childNode;
-	fprintf(stderr, "At find Identifier, number is %d\n", currentASTNode->element.nontermValue);
 	astTree typeNode = currentASTNode->childNode;
 	sem typeValue = typeNode->childNode->element;
 	token type = typeValue.leafName;
@@ -179,20 +204,21 @@ void findIdentifiers()
 		}
 	}
 	currentASTNode = currentASTNode->parentNode;
-	fprintf(stderr, "Leaving find Identifier, number is %d\n", currentASTNode->element.nontermValue);
 	return;
 }
 
+/*
+// Finds all the parameters and return values
+// of a function and adds them to the symbol table
+*/
 void findParameters(int idType)
 {
 	currentASTNode = currentASTNode->childNode;
-	fprintf(stderr, "At find parameters, number is %d\n", currentASTNode->element.nontermValue);
 	astTree typeNode = currentASTNode->childNode;
 	sem typeValue = typeNode->element;
 	token type = typeValue.leafName;
 	astTree varNodes = currentASTNode->sisterNode;
 	astTree dataNode = varNodes;
-	fprintf(stderr,"%d\n",dataNode->ruleNum);
 	addToCurrentSymbolTable(dataNode,type,idType);
 	varNodes = varNodes->sisterNode;
 	while(varNodes->ruleNum != 20)
@@ -206,14 +232,18 @@ void findParameters(int idType)
 		varNodes = varNodes->sisterNode;
 	}
 	currentASTNode = currentASTNode->parentNode;
-	fprintf(stderr, "Leaving find parameters, number is %d\n", currentASTNode->element.nontermValue);
 	return;
 }
 
+/*
+// Checks if an assignment statement has a matrix
+// assignment and if so adds its rows and columns
+// to symbol table.
+*/
 void findMatrixAssignment()
 {
 	astTree idNode = currentASTNode->childNode->childNode->childNode;
-	token type = checkTypeInFormedSymbolTable(idNode->data.token_data);
+	token type = checkTypeInFormedSymbolTable(idNode->data.token_data,idNode->data.lineNumber,idNode->data.charNumber);
 	if(type == MATRIX)
 	{
 		// It is a matrix.
@@ -254,7 +284,7 @@ void findMatrixAssignment()
 					if(newCol != numCols && numCols != -1)
 					{
 						// Rows have different number of columns.
-						fprintf(stderr,"Rows have different number of items\n");
+						printf("\x1b[31mSemantic Error 2: Rows have different number of columns for matrix %s on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",idNode->data.token_data,idNode->data.lineNumber,idNode->data.charNumber);
 						exit(0);
 					}
 					else
@@ -294,6 +324,10 @@ void findMatrixAssignment()
 	}
 }
 
+/*
+// Adds a symbol table for a if part as a child to the
+// the parent function symbol table.
+*/
 void addSymbolTableToList()
 {
 	if(stList->childList != NULL)
@@ -301,16 +335,22 @@ void addSymbolTableToList()
 		// Previous a child list exists. Create a new sister list.
 		STList parentList = stList;
 		stList = stList->childList;
-		while(stList != NULL)
+		while(stList->sisterList != NULL)
 		{
 			stList = stList->sisterList;
 		}
-		stList = malloc(sizeof(struct _STList));
+		stList->sisterList = malloc(sizeof(struct _STList));
+		stList = stList->sisterList;
 		stList->parentList = parentList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
 		stList->functionName = "if";
 		stList->scopeIdentifier = scopeIdentifier;
+		astTree tempNode = currentASTNode->childNode->childNode->sisterNode;
+		while(tempNode->data.flag)
+			tempNode = tempNode->childNode;
+		stList->startLineNumber = tempNode->data.lineNumber;
+		stList->startCharNumber = tempNode->data.charNumber;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -337,11 +377,17 @@ void addSymbolTableToList()
 		stList = stList->childList;
 		stList->sisterList = NULL;
 		stList->childList = NULL;
+		stList->functionName = "if";
 		matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
 		headMatrix->nextEntry = NULL;
 		stList->matrixTable = headMatrix;
 		currentMatrix = headMatrix;
 		stList->scopeIdentifier = scopeIdentifier;
+		astTree tempNode = currentASTNode->childNode->childNode->sisterNode;
+		while(tempNode->data.flag)
+			tempNode = tempNode->childNode;
+		stList->startLineNumber = tempNode->data.lineNumber;
+		stList->startCharNumber = tempNode->data.charNumber;
 		STable headEntry = malloc(sizeof(struct _STable));
 		headEntry->data = NULL;
 		headEntry->nextEntry = NULL;
@@ -358,6 +404,10 @@ void addSymbolTableToList()
 	}
 }
 
+/*
+// Separate function to add symbol table for else part
+// as child to the parent function symbol table.
+*/
 void addSymbolTableForElsePartToList()
 {
 	if(stList->childList != NULL)
@@ -365,11 +415,12 @@ void addSymbolTableForElsePartToList()
 		// Previous a child list exists. Create a new sister list.
 		STList parentList = stList;
 		stList = stList->childList;
-		while(stList != NULL)
+		while(stList->sisterList != NULL)
 		{
 			stList = stList->sisterList;
 		}
-		stList = malloc(sizeof(struct _STList));
+		stList->sisterList = malloc(sizeof(struct _STList));
+		stList = stList->sisterList;
 		stList->parentList = parentList;
 	}
 	else
@@ -381,6 +432,7 @@ void addSymbolTableForElsePartToList()
 	}
 	stList->sisterList = NULL;
 	stList->childList = NULL;
+	stList->functionName = "else";
 	matrixSizes headMatrix = malloc(sizeof(struct _matrixSizes));
 	headMatrix->nextEntry = NULL;
 	stList->matrixTable = headMatrix;
@@ -391,6 +443,11 @@ void addSymbolTableForElsePartToList()
 	stList->stringTable = headString;
 	currentString = headString;
 	stList->scopeIdentifier = scopeIdentifier;
+	astTree tempNode = currentASTNode->childNode;
+	while(tempNode->data.flag)
+		tempNode = tempNode->childNode;
+	stList->startLineNumber = tempNode->data.lineNumber;
+	stList->startCharNumber = tempNode->data.charNumber;
 	STable headEntry = malloc(sizeof(struct _STable));
 	headEntry->data = NULL;
 	headEntry->nextEntry = NULL;
@@ -400,6 +457,10 @@ void addSymbolTableForElsePartToList()
 	currentASTNode = currentASTNode->childNode; 
 }
 
+/*
+// Adds symbol table or a new function as child to the
+// parent function symbol table.
+*/
 void addSymbolTableForFunctionToList()
 {
 	if(stList->childList != NULL)
@@ -408,11 +469,12 @@ void addSymbolTableForFunctionToList()
 		STList parentList = stList;
 		stList = stList->childList;
 
-		while(stList != NULL)
+		while(stList->sisterList != NULL)
 		{
 			stList = stList->sisterList;
 		}
-		stList = malloc(sizeof(struct _STList));
+		stList->sisterList = malloc(sizeof(struct _STList));
+		stList = stList->sisterList;
 		stList->parentList = parentList;
 	}
 	else
@@ -439,7 +501,6 @@ void addSymbolTableForFunctionToList()
 	headEntry->nextEntry = NULL;
 	stList->table = headEntry;
 	currentEntry = headEntry;
-	fprintf(stderr,"%d\n",currentASTNode->element.nontermValue);
 	currentASTNode = currentASTNode->childNode;
 	// TODO: Add the return identifiers to the symbol table.
 	findParameters(2);
@@ -450,28 +511,18 @@ void addSymbolTableForFunctionToList()
 	stList->startLineNumber = currentASTNode->data.lineNumber;
 	stList->startCharNumber = currentASTNode->data.charNumber;
 	// TODO: Add the parameters to the symbol table.
-	fprintf(stderr,"%d\n",currentASTNode->element.nontermValue);
 	currentASTNode = currentASTNode->sisterNode;
 	findParameters(1);
-	fprintf(stderr,"Fine till here\n");
 	// Go into the function and find the variables.
 	currentASTNode = currentASTNode->sisterNode->childNode;
-	fprintf(stderr,"Fine till here 2\n");
 	checkNextStatementAndRead();
-	// if(currentASTNode.ruleNum == 3)
-	// {
-	// 	currentASTNode = currentASTNode->childNode;
-	// 	createSymbolTables();
-	// }
-	// else
-	// {
-	// 	// It is a functionDef statement.
-	// 	currentASTNode = currentASTNode->childNode;
-	// 	goToNewFunctionScope();
-	// }
-	// createSymbolTables();
 }
 
+/*
+// Pops symbol table of current function from current 
+// symbol list ince it is
+// over and retuns to symbol table of parent function.
+*/
 void popSymbolTable()
 {
 	if(stList->parentList == NULL)
@@ -484,6 +535,10 @@ void popSymbolTable()
 	curScope--;
 }
 
+/*
+// Increases the scope value when a new if/else
+// statement has been seen.
+*/
 void goToNewScope()
 {
 	curScope++;
@@ -491,6 +546,10 @@ void goToNewScope()
 	addSymbolTableToList();
 }
 
+/*
+// Increases the scope value when a new function declaration
+// statement has been seen.
+*/
 void goToNewFunctionScope()
 {
 	curScope++;
@@ -498,6 +557,9 @@ void goToNewFunctionScope()
 	addSymbolTableForFunctionToList();
 }
 
+/*
+// Finds the next statement to compute.
+*/
 void findNextStatement()
 {
 	if(currentASTNode == NULL)
@@ -539,16 +601,18 @@ void findNextStatement()
 	}
 }
 
+/*
+// Checks whether a functionDef or stmt is occurring
+// and calls appropriate functions.
+*/
 void checkNextStatementAndRead()
 {
 	// This function should always receive currentASTNode pointing at stmtOrFunctionDef
 	if(currentASTNode != NULL)
-		fprintf(stderr, "Recieved at %d\n", currentASTNode->element.nontermValue);
 	while(currentASTNode != NULL)
 	{
 		if(currentASTNode->ruleNum == 3)
 		{
-			fprintf(stderr, "Chossing this\n");
 			currentASTNode = currentASTNode->childNode;
 			createSymbolTables();
 		}
@@ -565,6 +629,10 @@ void checkNextStatementAndRead()
 		return;
 }
 
+/*
+// Separate function to create symbol table for statements
+// within the if block.
+*/
 void createSymbolTablesForIfBlock()
 {
 	while(1)
@@ -580,19 +648,28 @@ void createSymbolTablesForIfBlock()
 			case 5: break; // function call statement.
 			default: break; // Some other rule number.
 		}
-		if(currentASTNode->parentNode->sisterNode->ruleNum == 39)
+		if(currentASTNode->sisterNode->ruleNum == 39)
 		{
+			astTree tempNode = currentASTNode;
+			while(tempNode->data.flag)
+				tempNode = tempNode->childNode;
+			stList->endLineNumber = tempNode->data.lineNumber;
+			stList->endCharNumber = tempNode->data.charNumber;
 			return;
 		}
 		else
 		{
-			currentASTNode = currentASTNode->parentNode->sisterNode->childNode;
+			currentASTNode = currentASTNode->sisterNode->childNode;
 		}
 	}
 	if(currentASTNode == NULL)
 		return;
 }
 
+/*
+// Finds the ifstmt rule once all the statements within
+// if block are over in order to go back to parent function.
+*/
 void findIfStatement()
 {
 	if(currentASTNode == NULL)
@@ -608,11 +685,13 @@ void findIfStatement()
 	}
 }
 
+/*
+// Create symbol table based on different statements
+// in a function scope.
+*/
 void createSymbolTables()
 {
-	fprintf(stderr,"%d and %d\n",currentASTNode->element.nontermValue,currentASTNode->ruleNum);
 	int rule = currentASTNode->ruleNum - 7;
-	fprintf(stderr,"%d\n",rule);
 	switch(rule)
 	{
 		case 0: findIdentifiers();break; // declaration statement.
@@ -625,9 +704,7 @@ void createSymbolTables()
 	}
 	if(currentASTNode->parentNode->ruleNum == 3)
 	{
-		fprintf(stderr, "Here we are!!!!\n");
 		currentASTNode = currentASTNode->parentNode->sisterNode; // stmtsAndFunctionDef_type1
-		fprintf(stderr,"Here we have %d",currentASTNode->element.nontermValue);
 		if(currentASTNode == NULL)
 			return;
 		findNextStatement();
@@ -655,9 +732,10 @@ void createSymbolTables()
 			addSymbolTableForElsePartToList();
 			createSymbolTablesForIfBlock();
 			findIfStatement();
-			currentASTNode = currentASTNode->parentNode->parentNode->sisterNode; //stmtsAndFunctionDefs_type1
+			popSymbolTable();
 			if(currentASTNode == NULL)
 				return;
+			currentASTNode = currentASTNode->parentNode->parentNode->sisterNode; //stmtsAndFunctionDefs_type1
 			findNextStatement();
 			checkNextStatementAndRead();
 		}
@@ -669,53 +747,18 @@ void createSymbolTables()
 	return;
 }
 
-void printSymbolTable()
-{
-	STList readList = headList;
-	printf("\n\n");
-	printf("Printing all the symbols\n");
-	while(readList != NULL)
-	{
-		printf("%s(%d) From %d to %d\n",readList->functionName,readList->scopeIdentifier,readList->startLineNumber,readList->endLineNumber);
-		STable entry = readList->table;
-		while(entry->data != NULL)
-		{
-			printf("%s, scope: %d, type: %d, lineNumber: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber,entry->data->type);
-			entry = entry->nextEntry;
-		}
-		printf("matrix sizes\n");
-		matrixSizes matrices = readList->matrixTable;
-		while(matrices->matrixName != NULL)
-		{
-			printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
-			matrices = matrices->nextEntry;
-		}
-		stringSizes strings = readList->stringTable;
-		printf("string sizes\n");
-		while(strings->stringName != NULL)
-		{
-			printf("%d, %s\n",strings->length,strings->stringName);
-			strings = strings->nextEntry;
-		}
-		printf("Going to child table\n");
-		if(readList->childList != NULL)
-			readList = readList->childList;
-		else
-			return;
-	}
-	
-}
-
+/*
+// Main function called by driver to generate symbol table
+// for the code using the AST.
+*/
 STList generateSymbolTables(astTree astRoot)
 {
 	stList = malloc(sizeof(struct _STList));
 	curScope = 0;
 	scopeIdentifier = 0;
 	initialiseSymbolTable();
-	fprintf(stderr,"Heyho!\n");
 	currentASTNode = astRoot;
 	currentASTNode = currentASTNode->childNode->childNode; // stmtOrFunctionDef rule.
 	checkNextStatementAndRead();
-	printSymbolTable();
 	return headList;
 }

@@ -1,28 +1,32 @@
+/* Compilers Project Group 2
+// Aditya Raisinghani 2011A7PS042P
+// Utkarsh Verma 2011A7PS137P
+// BITS Pilani, Pilani Campus
+// Second semester 2014
+*/
 
-//get file of sem rules
-//read the file, store each NT with its semantc expansion: 
-//	~ASTnodename,
-//	~new leaves list (leaves are of ID, Num,rnumstr type, each has val or num style predefined)
-//	~RHS: make node? 
-//	~RHS: child NTs
-//	
-//get parsetable pointer, start traversing from top
-//make AST nodesa along way is rules hold for that parseing rule
-//	
-//	
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "parserDef.h"
 #include "tokens.h"
 #include "lexer.h"
+#include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
 #include "sem_parser.h"
+#include "ast.h"
+#include "symbol_table.h"
+#include "type_extractor.h"
+#include "semantic_analyzer.h"
+
 #define OFFSET2 4 //acc to semantic_rules.txt
 #define OFFSET3 3 //be sem line indicator nd next term
 #define NOSEMRULES 86 //no of sem rules
 
+/*
+//Used for debug
+//Prints the parsed semantic rules to stderr.
+*/
 void printSemanticRules(semRuleArray rules)
 {
 	int i = 0;
@@ -49,13 +53,16 @@ void printSemanticRules(semRuleArray rules)
 
 }
 
-
+/*
+// Opens the semantic_rules.txt file ,invokes the rule parser
+// and returns the array containing sem rules.
+*/
 semRuleArray returnSemanticRules()
 {
 		FILE *sem_rules_file = fopen("semantic_rules.txt","r");
 		if(sem_rules_file == NULL)
 		{
-			printf("The semantic file could not be found.\n");
+			printf("The semantic rules file could not be found.\n");
 			exit(1);
 		}
 		//semantics headRule;
@@ -72,14 +79,15 @@ semRuleArray returnSemanticRules()
 		{
 			semRule[ruleNum-1]->ruleNum = ruleNum;
 			ruleNum++;
-		//	semRule[0]->nextRule = readAndDefineSemanticRule(sem_rules_file);
 			semRule[ruleNum-1] = readAndDefineSemanticRule(sem_rules_file);
 			
 		}
-		printSemanticRules(semRule);
 		return semRule; //the headRule
 }
 
+/*
+//Receives the rule file pointer and parses the rules into semrule structure list.
+*/
 semrule readAndDefineSemanticRule(FILE *fp)
 {
 	// Reads the file and creates a single rule.
@@ -139,7 +147,10 @@ semrule readAndDefineSemanticRule(FILE *fp)
 	return SRule;
 }
 
-
+/*
+// Reads a nonterminal value according the notation in semantic rules txt file
+// Reads till a closing sq bracket and returns the string (char*) of nonterminal.
+*/
 char* readNonTerm(char* term, char* rule, int ptr)
 {
 	int i = ptr;
@@ -155,6 +166,9 @@ char* readNonTerm(char* term, char* rule, int ptr)
 	return term;
 }
 
+/*
+// Helper module for semrules parser. Reads a leaf term and returns it.
+*/
 sem readLeafTerm(char* rule, int ptr)
 {
 	sem leafterm;
@@ -163,7 +177,7 @@ sem readLeafTerm(char* rule, int ptr)
 	leafterm.isLeaf = TRUE;
 	leafterm.nontermValue = invalidNonTerm;
 	// !UPDATE
-	char* term = malloc(sizeof(char)*NONTERMSIZE); //30 is an arbit max size here
+	char* term = malloc(sizeof(char)*NONTERMSIZE); 
 	while(rule[i] != ' ')
 	{
 		term[j] = rule[i];
@@ -181,7 +195,7 @@ sem readLeafTerm(char* rule, int ptr)
   else
 	{
 		int j = 0;
-		char* value = malloc(sizeof(char)*NONTERMSIZE); //30 is an arbit max size here
+		char* value = malloc(sizeof(char)*NONTERMSIZE); 
 		while(rule[i] != ' ' )
 		{
 		value[j] = rule[i];
@@ -195,7 +209,10 @@ sem readLeafTerm(char* rule, int ptr)
 	return leafterm;
 }
 
-
+/*
+// Helper module for semrules parser. Reads the semantic objects on rhs of a rule
+// and returns the list of such objects (structs).
+*/
 sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 {
 	sems RHSnodes = malloc(sizeof(struct _semset));
@@ -280,6 +297,3 @@ sems getRHSnodes(char* ruleString, int ptr, choice _ch)
 	}
 	return headRHSnodes;
 }
-
-
-
