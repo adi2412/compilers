@@ -1101,7 +1101,7 @@ tokenInfo lexer(FILE *source, FILE* dest)
 		printf("%s ",getTokenName(tokens->token_name));
 		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID || tokens->token_name == NUM || tokens->token_name == RNUM)
 		{
-			printf("(%s) ",tokens->token_value);
+			printf("(\x1b[37m%s\x1b[0m) ",tokens->token_value);
 		}
 		tokens->nextToken = NULL;
 	}
@@ -1129,7 +1129,7 @@ tokenInfo lexer(FILE *source, FILE* dest)
 			printf("%s ",getTokenName(nextTokens->token_name));
 			if(nextTokens->token_name == ID || nextTokens->token_name == STR || nextTokens->token_name == FUNID)
 			{
-				printf("(%s) ",nextTokens->token_value);
+				printf("(\x1b[37m%s\x1b[0m) ",nextTokens->token_value);
 			}
 			tokens = tokens->nextToken;
 			tokens->nextToken = NULL;

@@ -49,30 +49,35 @@ void codegenData(ASMList asmlist, IRTable headIR)
 		if(findIR->op == MOV) 		//from enumerated ops list
 		{
 
-			char *datatext = findIR->result.temp_name;
+			char *datatext = malloc(sizeof(char)*LINESIZE);
+			//// cat findIR->result.temp_name;
 			//check if int or real or str
 			if(findIR->arg1.typename  == INTEGER )
 			{
-				char *datatext_type = " DW "; 		//fixed for now.
-				char *datatext_val = findIR->arg1.value; //try strcpy if this fails
+				///char *datatext_type = " DW "; 		//fixed for now.
+				///char *datatext_val = findIR->arg1.value; //try strcpy if this fails
+				sprintf(datatext, "%s DW %d", findIR->result.temp_name, findIR->arg1.value);
 			}
+			/* FLOAT handling in ASM?
 			else if(findIR->arg1.typename  == FLOAT ) 
 			{
 				char *datatext_type = " DW "; 		//fixed for now.
 				char *datatext_val = findIR->arg1.floatValue;
 			}
+			*/
 			else if(findIR->arg1.typename == STRINGENUM)	//replace with enum name
 			{
 				char *datatext_type = " DW ";
-				char *quote = "' ";
-				char *datatext_val;
-				strcpy(datatext_val,quote);
-				strcat(datatext_val, findIR->arg1.strValue);
-				strcat(datatext_val, quote);
-				sprintf(datatext_val, "")
+				//char *quote = "' ";
+				//char *datatext_val;
+				///strcpy(datatext_val,quote);
+				///strcat(datatext_val, findIR->arg1.strValue);
+				///strcat(datatext_val, quote);
+				sprintf(datatext, "%s DW '%s' ", findIR->result.temp_name, findIR->arg1.strValue);
 			}
-			strcat(datatext, datatext_type);
-			strcat(datatext, datatext_val);
+			///strcat(datatext, datatext_type);
+			///strcat(datatext, datatext_val);
+
 
 			asmlist([++asmlineno]) = malloc(sizeof(char)*LINESIZE);
 			strcpy(asmlist[asmlineno], datatext); 		//line added

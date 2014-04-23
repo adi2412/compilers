@@ -1,5 +1,0 @@
-F ; OP ID
-T ; OP ID
-E ; OP ID
-Ed ; PLUS EMPTY
-Td ; MUL EMPTY

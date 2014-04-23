@@ -5,7 +5,7 @@
 // Second semester 2014
 */
 
-// Contains functions for parsing
+// Contains functions for abstract syntax tree generation
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,6 +21,9 @@ astTree currentASTNode;
 tree currentNode;
 semRuleArray semRules;
 
+/*
+// Initialises the ast structure with default values.
+*/
 void initialiseASTTree()
 {
 	astTree treeNode = malloc(sizeof(struct _astTree));
@@ -41,6 +44,10 @@ void initialiseASTTree()
 	astRoot = treeNode;
 }
 
+
+/*
+// Traverse to next NonTerminal Node for AST
+*/
 void goToNextNonTerminalASTNode()
 {
 	if(currentASTNode->childNode != NULL)
@@ -81,6 +88,9 @@ void goToNextNonTerminalASTNode()
 	}
 }
 
+/*
+//	Traverse to the next NonTerminal Node
+*/
 void goToNextNonTerminalNode()
 {
 	if(currentNode->childNode != NULL)
@@ -121,6 +131,9 @@ void goToNextNonTerminalNode()
 	}
 }
 
+/*
+// find and goto the next AST node
+*/
 void findNextASTNode()
 {
 	astTree sister = currentASTNode->sisterNode;
@@ -141,7 +154,9 @@ void findNextASTNode()
 	currentASTNode = sister;
 }
 
-
+/**
+ * [addChildASTNodes description: adds child AST nodes to the ast rule]
+ */
 void addChildASTNodes(semrule rule)
 {
 	sems semTerms = rule->semanticsSet;
@@ -207,6 +222,11 @@ void addChildASTNodes(semrule rule)
 	}
 }
 
+/**
+ * [createASTTreeFromParseTree description]
+ * create AST Tree from the Parse tree current node
+ * recursively called for each node.
+ */	
 void createASTTreeFromParseTree()
 {
 	if(currentNode == NULL)
@@ -260,6 +280,13 @@ void createASTTreeFromParseTree()
 	}
 }
 
+/**
+ * [printASTTree description]
+ * 	print the AST tree to terminal. Uses appropriate color formatting.
+ * 	recursively called for each node.
+ * @param node
+ * 	the AST Tree node which is to be printed
+ */
 void printASTTree(astTree node)
 {
 	if(node == NULL)
@@ -292,6 +319,18 @@ void printASTTree(astTree node)
 	}
 }
 
+/**
+ * [ast description]
+ * 	main function for ast module
+ * 	invokes the ast structure initialiser, and the invokes the parse tree
+ * 	to ast tree generator
+ * @param  headRule
+ * 	head node of the semrule array structure
+ * @param  root
+ * 	root of the parse tree
+ * @return
+ * 	returns the generated AST tree root.
+ */
 astTree ast(semRuleArray headRule, tree root)
 {
 	initialiseASTTree();

@@ -28,7 +28,10 @@ int main(int argc,char* argv[])
 		printf("Invalid number of arguments\n");
 		exit(0);
 	}
-	printf("\x1b[37m\x1b[1m\x1b[4mCompilers group 2\n\n\x1b[0m");
+	printf("\x1b[37m\x1b[1m\x1b[4m\n\t\t\tCompilers Group 2\n\n\x1b[0m");
+	printf("\x1b[36m\x1b[1m\tAditya Raisinghani\t\tUtkarsh Verma\n\x1b[0m");
+	printf("\x1b[37m\x1b[3m\t2011A7PS042P\t\t\t2011A7PS137P\n\n\x1b[0m");
+	printf("\x1b[32m\tUnder supervision of Vandana Agarwal\n\n\x1b[0m");
 	printf("\x1b[33m\x1b[1m->FIRST and FOLLOW set automated.\n");
 	printf("->Lexical analyzer module implmeneted.\n");
 	printf("->Syntax analysis-> Grammar, FIRST, FOLLOW, and Parse Table generated.\n");
@@ -43,6 +46,7 @@ int main(int argc,char* argv[])
 	printf("\x1b[37m3:\x1b[22m\x1b[1m for printing the Abstract Syntax Tree\x1b[0m\n");
 	printf("\x1b[37m4:\x1b[22m\x1b[1m for printing Symbol Table\x1b[0m\n");
 	printf("\x1b[37m5:\x1b[22m\x1b[1m for compiling to verify syntactic and semantic correctness of code\x1b[0m\n");
+	printf("\x1b[37m\x1b[9m6:\x1b[22m\x1b[1m for generating code.asm (incomplete)\x1b[0m\n");
 	int choice;
 	scanf("%d",&choice);
 	printf("\x1b[4m\x1b[40m\x1b[31m\x1b[1mLEVEL 3: Symbol table/type Checking/AST/Semantic Rules modules works\n\n\x1b[0m");
