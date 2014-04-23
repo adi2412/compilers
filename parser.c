@@ -133,7 +133,6 @@ void pop()
 	stack stackItem = head->nextElement;
 	free(head);
 	head = stackItem;
-	printf("Top of stack now has %d(%d)",head->element.tokValue,head->element.nontermValue);
 }
 
 void push(terminal el)
@@ -162,7 +161,6 @@ void pushItems(terminals terms)
 	{
 		aboveItem->nextElement = head;
 		head = newTopItem;
-		printf("Top of stack now has %d(%d)",head->element.tokValue,head->element.nontermValue);
 	}
 }
 
@@ -175,13 +173,8 @@ void goToNextNode(tokenInfo token)
 {
 	if(currentNode->element.tokValue == token->token_name)
 	{
-		printf("Add data to the node\n");
-		if(token->token_name == ID || token->token_name == STR || token->token_name == FUNID)
+		if(token->token_name == ID || token->token_name == STR || token->token_name == FUNID || token->token_name == NUM || token->token_name == RNUM)
 			currentNode->element.token_data = token->token_value;
-	}
-	else
-	{
-		printf("Data not being added\n");
 	}
 	tree sister = currentNode->sisterNode;
 	tree parent = currentNode->parentNode;
@@ -199,9 +192,7 @@ void goToNextNode(tokenInfo token)
 			sister = parent->sisterNode;
 			parent = parent->parentNode;
 		}
-		fprintf(stderr, "Hello there!\n");
 	}
-	printf("New current node from sister is %d",sister->element.nontermValue);
 	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
 	{
 		currentNode = sister;
@@ -231,9 +222,7 @@ void findNextNode()
 			sister = parent->sisterNode;
 			parent = parent->parentNode;
 		}
-		fprintf(stderr, "Hey there!\n");
 	}
-	printf("New current node from sister is %d",sister->element.nontermValue);
 	if((sister->element.nontermValue != head->element.nontermValue) && (sister->element.tokValue != head->element.tokValue))
 	{
 		currentNode = sister;
@@ -250,12 +239,8 @@ void addChildNodes(rule rule)
 	nonTerminal LHSTerm = rule->nonterm_value;
 	if(LHSTerm == currentNode->element.nontermValue)
 	{
-		printf("adding rule number to parse tree %d\n",rule->ruleNum);
 		currentNode->ruleNum = rule->ruleNum;
 	}
-	else
-		printf("not adding rule numbers\n");
-	printf("before adding children, current node is: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
 	tree treeNode = malloc(sizeof(struct _tree));
 	treeNode->parentNode = currentNode;
 	treeNode->childNode = NULL;
@@ -285,14 +270,12 @@ void addChildNodes(rule rule)
 		term.tokValue = terms->term_value.tokValue;
 		term.token_data = "";
 		newNode->element = term;
-		printf("Adding sister node %d(%d)\n",newNode->element.tokValue,newNode->element.nontermValue);
 		prevNode = newNode;
 		terms = terms->nextTerm;
 	}
 	if(treeNode->element.tokValue != NIL)
 	{
 		currentNode = treeNode;
-		printf("current node: %d(%d)",currentNode->element.tokValue,currentNode->element.nontermValue);
 	}
 	else
 	{
@@ -304,7 +287,6 @@ void addChildNodes(rule rule)
 
 rule findRule(int ruleNum, rule headRule)
 {
-	fprintf(stderr, "Here!!!!\n");
 	int i = 1;
 	rule ruleList;
 	ruleList = headRule;
@@ -316,83 +298,36 @@ rule findRule(int ruleNum, rule headRule)
 	return ruleList;
 }
 
-int printTree(tree node)
+void printTree(tree node)
 {
 	if(node == NULL)
 	{
-		fprintf(stderr, "It is null\n");
-		return 0;
+		return;
 	}
-	else
+	while(node!= NULL)
 	{
-		fprintf(stderr,"Starting to print\n");
 		if(node->element.flag)
 		{
-			fprintf(stderr,"Node: %s(%d)\n",getNonTermValue(node->element.nontermValue),node->ruleNum);
-			tree childNode = node->childNode;
-			if(childNode == NULL)
-			{
-				fprintf(stderr,"No child nodes\n");
-				if(node->sisterNode != NULL)
-					printTree(node->sisterNode);
-				else
-				{
-					tree parentSisterNode = node->parentNode->sisterNode;
-					while(parentSisterNode == NULL)
-					{
-						node = node->parentNode;
-						if(node == NULL)
-							return 0;
-						else
-							parentSisterNode = node->parentNode->sisterNode;
-					}
-					printTree(parentSisterNode);
-				}
-			}
-			else
-			{
-				fprintf(stderr,"child nodes\n");
-				printTree(childNode);
-			}
+			printf("\x1b[37m\x1b[1m%s \x1b[0m",getNonTermValue(node->element.nontermValue));
 		}
 		else
 		{
-			// Terminal.
-			fprintf(stderr,"Leaf Node: %s", getTokenName(node->element.tokValue));
-			if(node->element.tokValue == ID || node->element.tokValue == STR || node->element.tokValue == FUNID)
-				fprintf(stderr,"(%s)",node->element.token_data);
-			fprintf(stderr,"\n");
-			if(node->sisterNode != NULL)
-			{
-				printTree(node->sisterNode);
-			}
-			else
-			{
-				if(node->parentNode == NULL)
-					return 0;
-				else
-				{
-					while(node->parentNode->sisterNode == NULL)
-					{
-						if(node->parentNode == NULL)
-							return 0;
-						else
-						{
-							node = node->parentNode;
-							if(node->parentNode == NULL)
-								return 0;
-						}
-					}
-					tree parentSisterNode = node->parentNode->sisterNode;
-					if(parentSisterNode != NULL)
-						printTree(parentSisterNode);
-					else
-						return 0;
-				}
-			}
+			printf("\x1b[33m%s \x1b[0m",getTokenName(node->element.tokValue));
+			if(node->sisterNode == NULL)
+				printf("\n");
 		}
-	}
-	return 0;
+		if(node->childNode != NULL)
+		{
+			printf("---> ");
+			printTree(node->childNode);
+		}
+		if(node->sisterNode != NULL)
+		{
+			node = node->sisterNode;
+		}
+		else
+			node = NULL;
+	}	
 }
 
 tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
@@ -407,14 +342,11 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 	tokenInfo readToken;
 	// tokens nextToken;
 	readToken = tokens;
-	printf("%d\n",readToken->token_name);
 
 	while(head->element.tokValue != DOL && readToken != NULL)
 	{
-		printf("Working on token %d", readToken->token_name);
 		// if(readToken->token_value != NULL)
 		// 	printf(" with value %s", readToken->token_value);
-		printf("\n\n\n");
 		if(!head->element.flag)
 		{
 			if(head->element.tokValue == readToken->token_name)
@@ -425,14 +357,12 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 					currentNode->element.lineNumber = readToken->lineNumber;
 					currentNode->element.charNumber = readToken->charNumber;
 				}
-				printf("Popping %d\n", head->element.tokValue);
 				goToNextNode(readToken);
 				readToken = readToken->nextToken;
 			}
 			else
 			{
 				// Some other terminal in input code.
-				printf("wtf? %d and %d\n",head->element.tokValue,readToken->token_name);
 				error(1);
 			}
 		}
@@ -442,7 +372,6 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			if(PT[head->element.nontermValue][readToken->token_name].ruleNumber == 0)
 			{
 				// No entry in Parse Table.
-				printf("no entry for %d and %d",head->element.nontermValue,readToken->token_name);
 				error(2);
 				
 			}
@@ -452,7 +381,6 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 				int ruleNumber = PT[head->element.nontermValue][readToken->token_name].ruleNumber;
 				if(ruleNumber == 0)
 				{
-					printf("Kuch toh gadbad hai boss\n");
 					exit(0);
 				}
 				rule correctRule = findRule(ruleNumber, headRule);
@@ -468,13 +396,11 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		if(head->element.tokValue == DOL)
 		{
 			// Successful parsing.
-			printTree(root);
+			return root;
 		}
 		else
 		{
 			// Parsing not successful.
-			printf("%d\n",head->element.tokValue);
-			printf("%d\n",head->element.nontermValue);
 			error(3);
 		}
 	}
@@ -483,13 +409,12 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 		if(readToken != NULL)
 		{
 			// Stack empty but input still exists.
-			printf("%d\n",readToken->token_name);
 			error(4);
 		}
 		else
 		{
 			// Succesful parsing.
-			printTree(root);
+			return root;
 		}
 	}
 

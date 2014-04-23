@@ -76,7 +76,6 @@ semRuleArray returnSemanticRules()
 			semRule[ruleNum-1] = readAndDefineSemanticRule(sem_rules_file);
 			
 		}
-		printSemanticRules(semRule);
 		return semRule; //the headRule
 }
 

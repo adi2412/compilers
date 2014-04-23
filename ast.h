@@ -6,3 +6,4 @@
 */
 
 astTree ast(semRuleArray headRule, tree root);
+void printASTTree(astTree node);

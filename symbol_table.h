@@ -66,6 +66,8 @@ struct _identifier
 
 void checkNextStatementAndRead();
 void createSymbolTables();
+token convertType(token type);
+void printSymbolTable(STList list);
 STList generateSymbolTables(astTree astRoot);
 
 #endif

@@ -24,22 +24,33 @@ int curScope;
 int scopeIdentifier;
 int returnParamsAssignedValue;
 
-void semanticError()
+void semanticError(int num,char* name, int lineNum, int charNum)
 {
-	fprintf(stderr, "A semantic error was generated\n");
-	exit(0);
+	switch(num)
+	{
+		case 0: printf("\x1b[31mSemantic Error: All return variables for function \x1b[37m\x1b[1m%s\x1b[31m have not been assigned a value.\n\x1b[0m",name);break;
+		case 1: printf("\x1b[31mSemantic Error: Function %s has been called but not defined on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 2: printf("\x1b[31mSemantic Error: Function \x1b[37m\x1b[1m%s\x1b[31m has been called recursively on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 3: printf("\x1b[31mSemantic Error: Variable \x1b[37m\x1b[1m%s\x1b[31m being assigned to a function with no return value on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 4: printf("\x1b[31mSemantic Error: Type mismatch- variable \x1b[37m\x1b[1m%s\x1b[31m has different type than return value on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 5: printf("\x1b[31mSemantic Error: Function \x1b[37m\x1b[1m%s\x1b[31m has been more than one return type but only one being assigned on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 6: printf("\x1b[31mSemantic Error: Too few input/return parameters to function \x1b[37m\x1b[1m%s\x1b[31m on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 7: printf("\x1b[31mSemantic Error: Type mismatch for function parameter name \x1b[37m\x1b[1m%s\x1b[31m on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+		case 8: printf("\x1b[31mSemantic Error: Too many input parameters being sent on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",lineNum,charNum);break;
+		case 9: printf("\x1b[31mSemantic Error: Non void function \x1b[37m\x1b[1m%s\x1b[31m being called as a void on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);break;
+	}
 }
 
 void popTableInSemanticAnalyzer()
 {
-	stList = stList->parentList;
-	curScope--;
 	if(returnParamsAssignedValue != 0)
 	{
 		// All return variables have not been assigned a value.
-		semanticError();
-		return;
+		semanticError(0,stList->functionName,0,0);
+		returnParamsAssignedValue = 0;
 	}
+	stList = stList->parentList;
+	curScope--;
 }
 
 // int doesExistInSymbolTable(char* name)
@@ -59,7 +70,7 @@ void popTableInSemanticAnalyzer()
 // 	return 1;
 // }
 
-STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumber)
+STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumber, int lineNum, int colNum)
 {
 	STList findList = stList->childList;
 	STable entry = findList->table;
@@ -83,7 +94,8 @@ STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumbe
 				if(findList->parentList->parentList == NULL)
 				{
 					// All scopes checked and function name not found.
-					semanticError();
+					semanticError(1,name,lineNum,colNum);
+					return NULL;
 				}
 				else
 				{
@@ -106,45 +118,23 @@ STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumbe
 		else
 		{
 			// Do separate semantic errors for recursive calls and for function call before definition error.
-			semanticError();
+			semanticError(2,name,lineNum,colNum);
 		}
 	}
 	return findList;
 }
 
-// void // {
-// 	astTree declarationStmt = currentASTNode->childNode;
-// 	astTree idNodes = declarationStmt->childNode->sisterNode;
-// 	while(idNodes != NULL)
-// 	{
-// 		astTree idNode = idNodes->childNode;
-// 		if(!doesExistInSymbolTable(idNode->data.token_data))
-// 		{
-// 			// Same name variable exists in current scope.
-// 			semanticError();
-// 		}
-// 		else
-// 		{
-// 			idNodes = idNodes->childNode->sisterNode;
-// 			if(idNodes->ruleNum == 24)
-// 				idNodes = NULL;
-// 			else
-// 				idNodes = idNodes->childNode;
-// 		}
-// 	}
-// }
 
 void analyzeAssignmentStmt()
 {
 	// Only need to check if it is a fun call stmt and analyze that.
-	printf("analyzing assignment statement\n");
 	astTree assignmentStmt = currentASTNode->childNode;
 	astTree rhsNodes = assignmentStmt->childNode->sisterNode;
 	if(rhsNodes->ruleNum == 28)
 	{
 		astTree returnID = assignmentStmt->childNode->childNode;
-		token returnType = checkTypeInSymbolTable(returnID->data.token_data);
-		STList funcSymbolTable = findFunctionSymbolTable(rhsNodes->childNode->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber);
+		token returnType = checkTypeInSymbolTable(returnID->data.token_data,returnID->data.lineNumber,returnID->data.charNumber);
+		STList funcSymbolTable = findFunctionSymbolTable(rhsNodes->childNode->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber,returnID->data.lineNumber,returnID->data.charNumber);
 		if(funcSymbolTable == NULL)
 		{
 			// Semantic error. Leave this statement and go to next statement.
@@ -156,20 +146,19 @@ void analyzeAssignmentStmt()
 		else
 		{
 			// This function has no return values.
-			semanticError();
+			semanticError(3,returnID->data.token_data,returnID->data.lineNumber,returnID->data.charNumber);
 		}
 		if(returnParamType != returnType)
 		{
 			// Return type does not match variable on LHS.
-			printf("%d, %d\n",returnParamType, returnType);
-			semanticError();
+			semanticError(4,returnID->data.token_data,returnID->data.lineNumber,returnID->data.charNumber);
 		}
 		else
 		{
 			if(funcSymbolTable->table->nextEntry->type == RETURN)
 			{
 				// More return values, but only one variable on LHS.
-				semanticError();
+				semanticError(5,funcSymbolTable->functionName,returnID->data.lineNumber,returnID->data.charNumber);
 			}
 		}
 
@@ -181,7 +170,7 @@ void analyzeAssignmentStmt()
 			if(inputParaList == NULL)
 			{
 				// No input parameters available, and function requires more.
-				semanticError();
+				semanticError(6,funcSymbolTable->functionName,returnID->data.lineNumber,returnID->data.charNumber);
 				return;
 			}
 			else
@@ -198,7 +187,7 @@ void analyzeAssignmentStmt()
 					}
 					else
 					{
-						inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data);
+						inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 						if(inputParamType == NIL)
 						{
 							// There was an error. Move on to next statement.
@@ -225,7 +214,7 @@ void analyzeAssignmentStmt()
 				if(convertToType(inputParams->data->type) != inputParamType)
 				{
 					// Type mismatch. Move on to next statement.
-					semanticError();
+					semanticError(7,inputParams->data->value,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 					return;
 				}
 			}
@@ -248,7 +237,7 @@ void analyzeAssignmentStmt()
 			if(inputParaList->ruleNum != 46)
 			{
 				// There are extra input parameters being sent.
-				semanticError();
+				semanticError(8,"",inputParaList->childNode->childNode->childNode->data.lineNumber,inputParaList->childNode->childNode->childNode->data.lineNumber);
 				return;
 			}
 		}
@@ -272,7 +261,7 @@ void analyzeFunCallStmt()
 {
 	// Check that this function call statement has no return values.
 	astTree funCallStmt = currentASTNode->childNode;	
-	STList funcSymbolTable = findFunctionSymbolTable(funCallStmt->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber);
+	STList funcSymbolTable = findFunctionSymbolTable(funCallStmt->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber,funCallStmt->childNode->data.lineNumber,funCallStmt->childNode->data.charNumber);
 	if(funcSymbolTable == NULL)
 	{
 		// Semantic error. Leave this statement and go to next statement.
@@ -281,7 +270,7 @@ void analyzeFunCallStmt()
 	if(funcSymbolTable->table->type == RETURN)
 	{
 		// This function has one or more return values.
-		semanticError();
+		semanticError(9,funcSymbolTable->functionName,funCallStmt->childNode->data.lineNumber,funCallStmt->childNode->data.charNumber);
 		return;
 	}
 
@@ -294,7 +283,7 @@ void analyzeFunCallStmt()
 		if(inputParaList == NULL)
 		{
 			// No input parameters available, and function requires more.
-			semanticError();
+			semanticError(6,funcSymbolTable->functionName,funCallStmt->childNode->data.lineNumber,funCallStmt->childNode->data.charNumber);
 			return;
 		}
 		else
@@ -311,7 +300,7 @@ void analyzeFunCallStmt()
 				}
 				else
 				{
-					inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data);
+					inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 					if(inputParamType == NIL)
 					{
 						// There was an error. Move on to next statement.
@@ -338,7 +327,7 @@ void analyzeFunCallStmt()
 			if(convertToType(inputParams->data->type) != inputParamType)
 			{
 				// Type mismatch. Move on to next statement.
-				semanticError();
+				semanticError(7,inputParams->data->value,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 				return;
 			}
 		}
@@ -359,7 +348,7 @@ void analyzeFunCallStmt()
 	if(inputParaList->ruleNum != 46)
 	{
 		// There are extra input parameters being sent.
-		semanticError();
+		semanticError(8,"",inputParaList->childNode->childNode->childNode->data.lineNumber,inputParaList->childNode->childNode->childNode->data.lineNumber);
 		return;
 	}
 }
@@ -372,7 +361,7 @@ void analyzeAssignmentType2Stmt()
 	if(rhsNodes->ruleNum == 30)
 	{
 		astTree returnList = assignmentStmt->childNode->childNode;
-		STList funcSymbolTable = findFunctionSymbolTable(rhsNodes->childNode->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber);
+		STList funcSymbolTable = findFunctionSymbolTable(rhsNodes->childNode->childNode->data.token_data,stList->startLineNumber,stList->endLineNumber,rhsNodes->childNode->childNode->data.lineNumber,rhsNodes->childNode->childNode->data.charNumber);
 		if(funcSymbolTable == NULL)
 		{
 			// Semantic error. Leave this statement and go to next statement.
@@ -384,14 +373,14 @@ void analyzeAssignmentType2Stmt()
 			if(returnList == NULL)
 			{
 				// Function returns more variables than provided.
-				semanticError();
+				semanticError(6,funcSymbolTable->functionName,rhsNodes->childNode->childNode->data.lineNumber,rhsNodes->childNode->childNode->data.charNumber);
 				return;
 			}
 			else
 			{
 				astTree returnParam = returnList->childNode;
 				token returnParamType;
-				returnParamType = checkTypeInSymbolTable(returnParam->childNode->data.token_data);
+				returnParamType = checkTypeInSymbolTable(returnParam->childNode->data.token_data,returnParam->childNode->data.lineNumber,returnParam->childNode->data.charNumber);
 				if(returnParamType == NIL)
 				{
 					// There was an error. Move on to the next statement.
@@ -400,7 +389,7 @@ void analyzeAssignmentType2Stmt()
 				if(returnParamType != convertToType(returnParams->data->type))
 				{
 					// Type mismatch. Move on to next statement.
-					semanticError();
+					semanticError(7,returnParams->data->value,returnParam->childNode->data.lineNumber,returnParam->childNode->data.charNumber);
 					return;
 				}
 			}
@@ -420,7 +409,7 @@ void analyzeAssignmentType2Stmt()
 			if(inputParaList == NULL)
 			{
 				// No input parameters available, and function requires more.
-				semanticError();
+				semanticError(6,funcSymbolTable->functionName,rhsNodes->childNode->childNode->data.lineNumber,rhsNodes->childNode->childNode->data.charNumber);
 				return;
 			}
 			else
@@ -437,7 +426,7 @@ void analyzeAssignmentType2Stmt()
 					}
 					else
 					{
-						inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data);
+						inputParamType = checkTypeInSymbolTable(inputParam->childNode->data.token_data,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 						if(inputParamType == NIL)
 						{
 							// There was an error. Move on to next statement.
@@ -464,7 +453,7 @@ void analyzeAssignmentType2Stmt()
 				if(convertToType(inputParams->data->type) != inputParamType)
 				{
 					// Type mismatch. Move on to next statement.
-					semanticError();
+					semanticError(7,inputParams->data->value,inputParam->childNode->data.lineNumber,inputParam->childNode->data.charNumber);
 					return;
 				}
 			}
@@ -485,7 +474,7 @@ void analyzeAssignmentType2Stmt()
 		if(inputParaList->ruleNum != 46)
 		{
 			// There are extra input parameters being sent.
-			semanticError();
+			semanticError(8,"",inputParaList->childNode->childNode->childNode->data.lineNumber,inputParaList->childNode->childNode->childNode->data.lineNumber);
 			return;
 		}
 	}
@@ -660,10 +649,8 @@ void runSemanticAnalyzerInIfScope()
 
 void runSemanticAnalyzer()
 {
-	printf("going through a statement\n");
 	while(currentASTNode != NULL)
 	{
-		printf("statement!\n");
 		if(currentASTNode->ruleNum == 4)
 		{
 			// It is a function.
@@ -696,6 +683,5 @@ int semanticAnalyzer(astTree astRoot, STList headList)
 	currentASTNode = astRoot->childNode->childNode;
 	stList = headList;
 	runSemanticAnalyzer();
-	printf("Semantic analyzer ran successfully\n");
 	return 0;
 }

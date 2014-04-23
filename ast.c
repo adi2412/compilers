@@ -158,7 +158,6 @@ void addChildASTNodes(semrule rule)
 		childNodes = childNodes->sisterNode;
 		if(childNodes == NULL)
 		{
-			fprintf(stderr,"It got to NULL\n");
 			exit(0);
 		}
 	}
@@ -181,13 +180,10 @@ void addChildASTNodes(semrule rule)
 			childNodes = childNodes->sisterNode;
 			if(childNodes == NULL)
 			{
-				fprintf(stderr,"It got to NULL\n");
 				exit(0);
 			}
 		}
-		printf("%s == %s\n",getTokenName(semTerm.leafName),getTokenName(childNodes->element.tokValue));
 		newNode->data = childNodes->element;
-		printf("Adding data %s for %s\n",treeNode->data.token_data,getTokenName(newNode->data.tokValue));
 		// childNodes = childNodes->sisterNode;
 		prevNode->sisterNode = newNode;
 		prevNode = newNode;
@@ -270,83 +266,30 @@ void printASTTree(astTree node)
 	{
 		return;
 	}
-	else
+	while(node!= NULL)
 	{
 		if(!node->element.isLeaf)
 		{
-			printf("Node: %s(%d)(%s)\n",getNonTermValue(node->element.nontermValue),node->ruleNum,node->data.token_data);
-			astTree childNode = node->childNode;
-			if(childNode == NULL)
-			{
-				if(node->sisterNode != NULL)
-					printASTTree(node->sisterNode);
-				else
-				{	
-					if(node->parentNode == NULL)
-					return;
-					else
-					{
-						while(node->parentNode->sisterNode == NULL)
-						{
-							if(node->parentNode == NULL)
-								return;
-							else
-							{
-								node = node->parentNode;
-								if(node->parentNode == NULL)
-									return;
-							}
-						}
-						astTree parentSisterNode = node->parentNode->sisterNode;
-						if(parentSisterNode != NULL)
-							printASTTree(parentSisterNode);
-						else
-							return;
-					}
-				}
-			}
-			else
-			{
-				printASTTree(childNode);
-			}
+			printf("\x1b[37m\x1b[1m%s \x1b[0m",getNonTermValue(node->element.nontermValue));
 		}
 		else
 		{
-			printf("Leaf node: %s(%s)", getTokenName(node->element.leafName),node->data.token_data);
-			if(node->element.leafName== ID || node->element.leafName == STR || node->element.leafName == FUNID)
-				printf("(%s)",node->element.leafValue);
-			printf("\n");
-			if(node->sisterNode != NULL)
-			{
-				printASTTree(node->sisterNode);
-			}
-			else
-			{
-				if(node->parentNode == NULL)
-					return;
-				else
-				{
-					while(node->parentNode->sisterNode == NULL)
-					{
-						if(node->parentNode == NULL)
-							return;
-						else
-						{
-							node = node->parentNode;
-							if(node->parentNode == NULL)
-								return;
-						}
-					}
-					astTree parentSisterNode = node->parentNode->sisterNode;
-					if(parentSisterNode != NULL)
-						printASTTree(parentSisterNode);
-					else
-						return;
-				}
-			}
+			printf("\x1b[33m%s \x1b[0m",getTokenName(node->element.leafName));
+			if(node->sisterNode == NULL)
+				printf("\n");
 		}
+		if(node->childNode != NULL)
+		{
+			printf("---> ");
+			printASTTree(node->childNode);
+		}
+		if(node->sisterNode != NULL)
+		{
+			node = node->sisterNode;
+		}
+		else
+			node = NULL;
 	}
-	return;
 }
 
 astTree ast(semRuleArray headRule, tree root)
@@ -355,6 +298,5 @@ astTree ast(semRuleArray headRule, tree root)
 	currentNode = root;
 	semRules = headRule;
 	createASTTreeFromParseTree();
-	printASTTree(astRoot);
 	return astRoot;
 }

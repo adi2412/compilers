@@ -305,7 +305,7 @@ tokenInfo getNumberToken(FILE *fp, buffer B)
 		// Return next token from the next buffer.
 		return getNumberToken(fp, B);
 	}
-	alphabet[i++] = B->buff[B->fwdPointer];
+	// alphabet[i] = B->buff[B->fwdPointer];
 
 
 	while(((B->buff[B->fwdPointer] >= '0') && (B->buff[B->fwdPointer] <= '9')) && i< NUMSIZE)  //UPDATE:how to handle the number size limit?
@@ -587,7 +587,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			if(a == '>')
 			{
 				token->token_name = GE;
-				B->curPointer = B->fwdPointer;
+				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
 				free(nextToken);
 				return token;
@@ -595,7 +595,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 			else
 			{
 				token->token_name = LE;
-				B->curPointer = B->fwdPointer;
+				B->curPointer = ++B->fwdPointer;
 				B->charNumber = B->fwdPointer;
 				free(nextToken);
 				return token;
@@ -639,7 +639,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		{
 			// EQ token.
 			token->token_name = EQ;
-			B->charNumber = B->fwdPointer;
+			B->charNumber = ++B->fwdPointer;
 			free(nextToken);
 			return token;
 		}
@@ -902,6 +902,7 @@ tokenInfo getNextToken(FILE *fp, buffer B)
 		char* numvalue = (char*)malloc((1+NUMSIZE)*sizeof(char));
 		tokenInfo numToken = getNumberToken(fp, B);
 		token->token_name = numToken->token_name; //whether RealNum or IntNum.
+		numvalue[0] = a;
 		token->token_value = joinStrings(numvalue,numToken->token_value);
 		B->curPointer = B->fwdPointer;
 		B->charNumber = B->fwdPointer;
@@ -1085,9 +1086,7 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	else{
 		head = tokens;
 		printf("%s ",getTokenName(tokens->token_name));
-		fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(tokens->token_name),getLexemeName(tokens),tokens->lineNumber,tokens->charNumber);
-		fprintf(dest,"\n");
-		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
+		if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID || tokens->token_name == NUM || tokens->token_name == RNUM)
 		{
 			printf("(%s) ",tokens->token_value);
 		}
@@ -1108,17 +1107,13 @@ tokenInfo lexer(FILE *source, FILE* dest)
 		else
 		{
 			tokens->nextToken = nextTokens;
-			//printf("%p is the address\n", curBuff);
 			if(nextTokens->lineNumber != lineNumber)
 			{
 				printf("\n");
-				fprintf(dest,"\n");
 				//curBuff->lineNumber = tokens->lineNumber;
 				++lineNumber;
 			}
 			printf("%s ",getTokenName(nextTokens->token_name));
-			fprintf(dest,"%s\t(%s)\tLine Number: %d\tCharacter Number: %d\n",getTokenName(nextTokens->token_name),getLexemeName(nextTokens),nextTokens->lineNumber,nextTokens->charNumber);
-			fprintf(dest,"\n");
 			if(nextTokens->token_name == ID || nextTokens->token_name == STR || nextTokens->token_name == FUNID)
 			{
 				printf("(%s) ",nextTokens->token_value);
@@ -1129,61 +1124,6 @@ tokenInfo lexer(FILE *source, FILE* dest)
 	}
 	tokens = head;
 	printf("\n");
-	fprintf(dest,"\n");
 	fclose(source);
 	return head;
 }
-// int main()
-// {
-// 	FILE *source;
-// 	source = fopen("test.txt","r");
-// 	tokenInfo tokens;
-// 	buffer firstBuff = malloc(sizeof(buffStruct));	
-// 	firstBuff->curPointer = 0;
-// 	firstBuff->fwdPointer = 0;
-// 	firstBuff->charNumber = 1;
-// 	firstBuff->lineNumber = 1;
-// 	buffer secondBuff = malloc(sizeof(buffStruct));
-// 	secondBuff->curPointer = 0;
-// 	secondBuff->fwdPointer = 0;
-// 	secondBuff->charNumber = 1;
-// 	secondBuff->lineNumber = 1;
-// 	firstBuff->nextBuffer = secondBuff;
-// 	secondBuff->nextBuffer = firstBuff;
-// 	int lineNumber = 1;
-// 	// Initialise the first buffer stream
-// 	getStream(source, firstBuff, BUFFERSIZE);
-// 	curBuff = firstBuff; // Current buffer being used.
-// 	if(firstBuff->nextBuffer == NULL)
-// 	{
-// 		return 0;
-// 	}
-// 	while(curBuff->buff[curBuff->curPointer] != EOF)
-// 	{
-// 		tokens = getNextToken(source, curBuff);
-// 		if(tokens == NULL)
-// 		{
-// 			// End of file reached. Stop here.
-// 			break;
-// 		}
-// 		else
-// 		{
-// 			tokens->nextToken = malloc(sizeof(tokenStruct));
-// 			//printf("%p is the address\n", curBuff);
-// 			if(tokens->lineNumber != lineNumber)
-// 			{
-// 				printf("\n");
-// 				//curBuff->lineNumber = tokens->lineNumber;
-// 				++lineNumber;
-// 			}
-// 			printf("%s ",getTokenName(tokens->token_name));
-// 			if(tokens->token_name == ID || tokens->token_name == STR || tokens->token_name == FUNID)
-// 				printf("(%s) ",tokens->token_value);
-// 			tokens = tokens->nextToken;
-// 			tokens->nextToken = NULL;
-// 		}
-// 	}
-// 	printf("\n");
-// 	fclose(source);
-// 	return 0;
-// }

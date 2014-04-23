@@ -59,5 +59,6 @@ struct _astTree
 };
 
 tree parse(nonterm nonTerms, tokenInfo tokens, grammar headRule);
+void printTree(tree node);
 
 #endif
