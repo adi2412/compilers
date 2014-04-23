@@ -95,7 +95,7 @@ int main(int argc,char* argv[])
 		if(rules == NULL)
 		{
 			printf("The grammar file could not be found.\n");
-			exit(1);
+			exit(0);
 		}
 
 		grammar headRule;
@@ -145,7 +145,7 @@ int main(int argc,char* argv[])
 		if(rules == NULL)
 		{
 			printf("The grammar file could not be found.\n");
-			exit(1);
+			exit(0);
 		}
 
 		grammar headRule;
@@ -197,7 +197,7 @@ int main(int argc,char* argv[])
 		if(rules == NULL)
 		{
 			printf("The grammar file could not be found.\n");
-			exit(1);
+			exit(0);
 		}
 
 		grammar headRule;
@@ -222,6 +222,7 @@ int main(int argc,char* argv[])
 		semRuleArray  sra = returnSemanticRules();
 		astTree astRoot = ast(sra, root);
 		STList headList = generateSymbolTables(astRoot);
+		typeChecker(astRoot, headList);
 		printf("\x1b[4m\x1b[1m\x1b[37mPrinting symbol table\n\x1b[0m");
 		printf("\x1b[4m\x1b[36m%20s%20s%20s%20s\x1b[0m\n","Identifier name","scope","type","offset");
 		printSymbolTable(headList);
@@ -251,7 +252,7 @@ int main(int argc,char* argv[])
 		if(rules == NULL)
 		{
 			printf("The grammar file could not be found.\n");
-			exit(1);
+			exit(0);
 		}
 
 		grammar headRule;

@@ -13,8 +13,11 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
+#include "semantic_analyzer.h"
 
 astTree currentASTNode;
 STList stList;
@@ -87,6 +90,10 @@ token checkTypeInSymbolTable(char* name,int lineNum, int charNum)
 	return convertToType(entry->data->type);
 }
 
+/*
+// Check the size expression in assignment type stmt
+// and report any type errors appropriately.
+*/
 void checkSizeExpression(token type, astTree nodes)
 {
 	astTree childID = nodes->childNode->childNode;
@@ -103,6 +110,10 @@ void checkSizeExpression(token type, astTree nodes)
 	}
 }
 
+/*
+// Fills rows and columns entries for a matrix if it does
+// not already exist 
+*/
 void fillDataInMatrixTable(char* name, int rows, int cols)
 {
 	matrixSizes entry = stList->matrixTable;
@@ -118,6 +129,12 @@ void fillDataInMatrixTable(char* name, int rows, int cols)
 	entry->nextEntry = NULL;
 }
 
+/**
+ * Fills string length for a given string into the symbol
+ * table if it does not already have it.
+ * @param name
+ * @param length
+ */
 void fillDataInStringTable(char* name, int length)
 {
 	stringSizes entry = stList->stringTable;
@@ -132,24 +149,63 @@ void fillDataInStringTable(char* name, int length)
 	entry->nextEntry = NULL;
 }
 
-int getSize(char* name,int lineNum,int charNum)
+/**
+ * Gets the size of a particular string from symbol table.
+ * @param  name
+ * @param  lineNum
+ * @param  charNum
+ * @param  list
+ * @param  flag
+ * @return
+ */
+int getSize(char* name,int lineNum,int charNum,STList list,int flag)
 {
-	stringSizes entry = stList->stringTable;
-	if(entry->stringName == NULL)
-		return 0;
-	while(strcmp(entry->stringName,name))
+	STList readList = list;
+	if(list->stringTable->stringName != NULL)
 	{
-		entry = entry->nextEntry;
-		if(entry->stringName == NULL)
+		stringSizes strings = readList->stringTable;
+		while(strings->stringName != NULL)
 		{
-			// No such string name found.
-			typeError(3,name,lineNum,charNum);
-			return 0;
+			if(strcmp(strings->stringName,name))
+				strings = strings->nextEntry;
+			else
+				return strings->length;
+			if(strings->stringName == NULL)
+			{
+				int length = 0;
+				if(readList->parentList != NULL)
+				{
+					readList = readList->parentList;
+					length = getSize(name,lineNum,charNum,readList,1);
+				}
+				if(length == 0 && flag)
+				{
+					if(readList->sisterList != NULL)
+					{
+						length = getSize(name,lineNum,charNum,readList->sisterList,1);
+					}
+				}
+				if(length == 0 && !flag)
+				{
+					typeError(3,name,lineNum,charNum);
+				}
+				return length;
+			}
 		}
 	}
-	return entry->length;
+	typeError(3,name,lineNum,charNum);
+	return 0;
 }
 
+/**
+ * Gets the rows and columns size of a matrix from symbol
+ * table.
+ * @param  name
+ * @param  flag
+ * @param  lineNum
+ * @param  charNum
+ * @return
+ */
 matrixSizes findMatrixInMatrixTable(char* name, int flag, int lineNum, int charNum)
 {
 	matrixSizes entry = stList->matrixTable;
@@ -172,6 +228,13 @@ matrixSizes findMatrixInMatrixTable(char* name, int flag, int lineNum, int charN
 	return entry;
 }
 
+/**
+ * Checks an arithmetic expression and reports type errors
+ * if any.
+ * @param idName
+ * @param type
+ * @param nodes
+ */
 void checkArithmeticExpression(char* idName, token type, astTree nodes)
 {
 	int flag = 0;
@@ -252,7 +315,7 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 							}
 							else
 							{
-								int length= getSize(typeNode->childNode->data.token_data,typeNode->childNode->data.lineNumber,typeNode->childNode->data.charNumber);
+								int length= getSize(typeNode->childNode->data.token_data,typeNode->childNode->data.lineNumber,typeNode->childNode->data.charNumber,stList,0);
 								if(length == 0)
 								{
 									// No string found error.
@@ -316,6 +379,8 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 					}
 					else
 					{
+						int length = strlen(typeNode->childNode->data.token_data);
+						stringLength += length;
 						lowPrecedenceOnly = 1;
 					}
 				}
@@ -374,6 +439,9 @@ void checkArithmeticExpression(char* idName, token type, astTree nodes)
 	}
 }
 
+/**
+ * Checks assignmenttype2 statements for type errors.
+ */
 void checkAssignmentType2()
 {
 	astTree stmtNode = currentASTNode->childNode->childNode;
@@ -413,6 +481,9 @@ void checkAssignmentType2()
 	}
 }
 
+/**
+ * Checks assignment type1 statements for type errors.
+ */
 void checkAssignmentType1()
 {
 	// Current receives current node at stmt.
@@ -429,21 +500,21 @@ void checkAssignmentType1()
 		case 27: checkSizeExpression(type,rhsNodes);break;// Size Expression
 		case 28: break; // Function call
 	}
-
 }
 
-// void goToStatement()
-// {
-// 	currentASTNode = currentASTNode->childNode;
-
-// }
-
+/**
+ * Pops the symbol table from the current symbol table.
+ */
 void popTable()
 {
 	stList = stList->parentList;
 	curScope--;
 }
 
+/**
+ * Goes to else scope and pushes its symbol table to the
+ * current symbol table.
+ */
 void goToElseScope()
 {
 	curScope++;
@@ -462,6 +533,10 @@ void goToElseScope()
 	}
 }
 
+/**
+ * Goes to if scope and pushes its symbol table to the 
+ * current symbol table.
+ */
 void goToIfScope()
 {
 	curScope++;
@@ -502,6 +577,10 @@ void goToIfScope()
 	}
 }
 
+/**
+ * Goes to new function scope and pushes its symbol table
+ * to the current symbol table.
+ */
 void goToFunctionScope()
 {
 	curScope++;
@@ -523,6 +602,9 @@ void goToFunctionScope()
 	popTable();
 }
 
+/**
+ * Get the next statement to run type checker on.
+ */
 void nextStatement()
 {
 	if(currentASTNode == NULL)
@@ -558,6 +640,9 @@ void nextStatement()
 	}
 }
 
+/**
+ * Separate function to run type checker when in if scope.
+ */
 void runTypeCheckerInIfScope()
 {
 	while(currentASTNode != NULL)
@@ -582,6 +667,9 @@ void runTypeCheckerInIfScope()
 	}
 }
 
+/**
+ * Run type checker when in a function scope.
+ */
 void runTypeChecker()
 {
 	while(currentASTNode != NULL)
@@ -609,48 +697,149 @@ void runTypeChecker()
 	}
 }
 
-void printTable(STList headList)
+/**
+ * Find length of a string from the symbol table. To be
+ * used only with print symbol table function.
+ * @param  name
+ * @param  list
+ * @param  flag
+ * @return
+ */
+int findLength(char* name, STList list, int flag)
 {
-	STList readList = headList;
-	printf("\n\n");
-	printf("Printing all the symbols\n");
+	STList readList = list;
+	if(list->stringTable->stringName != NULL)
+	{
+		stringSizes strings = readList->stringTable;
+		while(strings->stringName != NULL)
+		{
+			if(strcmp(strings->stringName,name))
+				strings = strings->nextEntry;
+			else
+				return strings->length;
+			if(strings->stringName == NULL)
+			{
+				int length = 0;
+				if(readList->parentList != NULL)
+				{
+					readList = readList->parentList;
+					length = findLength(name,readList,1);
+				}
+				if(length == 0 && flag)
+				{
+					if(readList->sisterList != NULL)
+					{
+						length = findLength(name,readList->sisterList,1);
+					}
+				}
+				return length;
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * Find the rows and columns of a mtrix from the symbol
+ * table. To be used only with print symbol table function.
+ * @param  name
+ * @param  list
+ * @return
+ */
+matrixSizes findMatrix(char* name,STList list)
+{
+	STList readList = list;
+	if(list->matrixTable != NULL)
+	{
+		matrixSizes entry = list->matrixTable;
+		if(entry->matrixName != NULL)
+		{
+			while(strcmp(entry->matrixName,name))
+			{
+				entry = entry->nextEntry;
+				if(entry->matrixName == NULL)
+				{
+					// All matrices in current scope over. Check above.
+					if(readList->parentList == NULL)
+					{
+						entry = NULL;
+						break;
+					}
+					entry = readList->parentList->matrixTable;
+					readList = readList->parentList;
+				}
+			}
+		}
+		else
+			entry = NULL;
+		return entry;
+	}
+	return NULL;
+}
+
+/**
+ * Print the symbol table in the specified format.
+ * @param list
+ */
+void printSymbolTable(STList list)
+{
+	int a = 0;
+	STList readList = list;
 	while(readList != NULL)
 	{
-		printf("%s(%d) From %d to %d\n",readList->functionName,readList->scopeIdentifier,readList->startLineNumber,readList->endLineNumber);
 		STable entry = readList->table;
 		while(entry->data != NULL)
 		{
-			printf("%s, scope: %d, type: %d, lineNumber: %d, idType: %d\n",entry->data->value,entry->scope,entry->type,entry->lineNumber,entry->data->type);
+			printf("%20s%16s(%2d-%2d)%16s",entry->data->value,readList->functionName,readList->startLineNumber,readList->endLineNumber,getTokenName(entry->data->type));
+			if(entry->data->type == NUM || entry->data->type == INT)
+			{
+				printf("%s","    ");
+				printf("%15d",a);
+				a = a+2;
+			}
+			else if(entry->data->type == RNUM || entry->data->type == REAL)
+			{
+				printf("%s","    ");
+				printf("%15d",a);
+				a= a+4;
+			}
+			else if(entry->data->type == STR || entry->data->type == STRING)
+			{
+				printf("%s","    ");
+				printf("%15d",a);
+				a = a + findLength(entry->data->value,readList,0);
+			}
+			else if(entry->data->type == MATRIX)
+			{
+				matrixSizes mat = findMatrix(entry->data->value,readList);
+				if(mat == NULL)
+				{
+					printf(",0,0");
+				}
+				else
+				{
+					printf(",%d,%d",mat->rows,mat->columns);
+				}
+			}
+			printf("\n");
 			entry = entry->nextEntry;
 		}
-		printf("matrix sizes\n");
-		if(readList->matrixTable->matrixName != NULL)
-		{
-			matrixSizes matrices = readList->matrixTable;
-			while(matrices->matrixName != NULL)
-			{
-				printf("%dx%d, %s\n",matrices->rows,matrices->columns,matrices->matrixName);
-				matrices = matrices->nextEntry;
-			}
-		}
-		if(readList->stringTable->stringName != NULL)
-		{
-			stringSizes strings = readList->stringTable;
-			printf("string sizes\n");
-			while(strings->stringName != NULL)
-			{
-				printf("%d, %s\n",strings->length,strings->stringName);
-				strings = strings->nextEntry;
-			}
-		}
-		printf("Going to child table\n");
 		if(readList->childList != NULL)
-			readList = readList->childList;
+			printSymbolTable(readList->childList);
+		if(readList->sisterList != NULL)
+			readList = readList->sisterList;
 		else
-			return;
+			readList = NULL;
 	}
 }
 
+/**
+ * Main function called by driver to run the type checker
+ * on the entire code using AST as input.
+ * @param  astRoot
+ * @param  headList
+ * @return
+ */
 int typeChecker(astTree astRoot, STList headList)
 {
 	curScope = 0;
@@ -658,6 +847,5 @@ int typeChecker(astTree astRoot, STList headList)
 	currentASTNode = astRoot->childNode->childNode;
 	stList = headList;
 	runTypeChecker();
-	// printTable(headList);
 	return 0;
 }

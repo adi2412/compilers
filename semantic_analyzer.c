@@ -13,6 +13,8 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
 #include "semantic_analyzer.h"
@@ -41,6 +43,9 @@ void semanticError(int num,char* name, int lineNum, int charNum)
 	}
 }
 
+/**
+ * Pop the symbol table from the current symbol table.
+ */
 void popTableInSemanticAnalyzer()
 {
 	if(returnParamsAssignedValue != 0)
@@ -53,23 +58,18 @@ void popTableInSemanticAnalyzer()
 	curScope--;
 }
 
-// int doesExistInSymbolTable(char* name)
-// {
-// 	STable entry = stList->table;
-// 	while(strcmp(entry->data->value, name))
-// 	{
-// 		entry = entry->nextEntry;
-// 		if(entry->data == NULL)
-// 		{
-// 			// All entries in the current scope over. Check parent scope.
-// 			if(stList->parentList == NULL)
-// 				return 0;
-// 			entry = stList->parentList->table;
-// 		}
-// 	}
-// 	return 1;
-// }
-
+/**
+ * Find the symbol table for a particular function name.
+ * Pass the current function's start and end line number
+ * to check if it is a legal call and if it is not a
+ * recursive call.
+ * @param  name
+ * @param  startLineNumber
+ * @param  endLineNumber
+ * @param  lineNum
+ * @param  colNum
+ * @return
+ */
 STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumber, int lineNum, int colNum)
 {
 	STList findList = stList->childList;
@@ -124,7 +124,10 @@ STList findFunctionSymbolTable(char* name, int startLineNumber, int endLineNumbe
 	return findList;
 }
 
-
+/**
+ * Analyze the current assignment statement for semantic
+ * errors.
+ */
 void analyzeAssignmentStmt()
 {
 	// Only need to check if it is a fun call stmt and analyze that.
@@ -257,6 +260,9 @@ void analyzeAssignmentStmt()
 	}
 }
 
+/**
+ * Analyze the function call statement for semantic errors.
+ */
 void analyzeFunCallStmt()
 {
 	// Check that this function call statement has no return values.
@@ -353,6 +359,9 @@ void analyzeFunCallStmt()
 	}
 }
 
+/**
+ * Analyze assignment type2 statement for semantic errors.
+ */
 void analyzeAssignmentType2Stmt()
 {
 	// Only need to check if it is a fun call stmt and analyze that.
@@ -503,6 +512,10 @@ void analyzeAssignmentType2Stmt()
 	}
 }
 
+/**
+ * Analyze the new function seen and run semantic checker
+ * on the lines within the function.
+ */
 void analyzeFunctionScope()
 {
 	curScope++;
@@ -530,6 +543,10 @@ void analyzeFunctionScope()
 	popTableInSemanticAnalyzer();
 }
 
+/**
+ * Go to the new else scope and push it's symbol table
+ * to the current symbol table.
+ */
 void ToElseScope()
 {
 	curScope++;
@@ -548,6 +565,10 @@ void ToElseScope()
 	}
 }
 
+/**
+ * Analyze statements within the new if block for semantic
+ * errors.
+ */
 void analyzeIfStmt()
 {
 	curScope++;
@@ -588,6 +609,9 @@ void analyzeIfStmt()
 	}
 }
 
+/**
+ * Go to the next statement to be analyzed.
+ */
 void toNextStatement()
 {
 	if(currentASTNode == NULL)
@@ -623,6 +647,10 @@ void toNextStatement()
 	}
 }
 
+/**
+ * Separate function to run semantic analyzer in the if 
+ * scope.
+ */
 void runSemanticAnalyzerInIfScope()
 {
 	while(currentASTNode != NULL)
@@ -647,6 +675,9 @@ void runSemanticAnalyzerInIfScope()
 	}
 }
 
+/**
+ * Run semantic analyzer when in a function scope.
+ */
 void runSemanticAnalyzer()
 {
 	while(currentASTNode != NULL)
@@ -675,6 +706,13 @@ void runSemanticAnalyzer()
 	}
 }
 
+/**
+ * Main function called by driver to run semantic analyzer
+ * on the entire code and show errors if any.
+ * @param  astRoot
+ * @param  headList
+ * @return
+ */
 int semanticAnalyzer(astTree astRoot, STList headList)
 {
 	curScope = 0;

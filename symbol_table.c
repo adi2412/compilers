@@ -15,8 +15,11 @@
 #include "parserDef.h"
 #include "first_follow_gen.h"
 #include "parser.h"
+#include "sem_parser.h"
+#include "ast.h"
 #include "symbol_table.h"
 #include "type_extractor.h"
+#include "semantic_analyzer.h"
 
 astTree currentASTNode;
 STList stList;
@@ -33,6 +36,10 @@ void STError(int num,char* name,int lineNum,int charNum)
 	printf("\x1b[31mSemantic Error 2: Identifier \x1b[37m\x1b[1m%s\x1b[31m must be declared before use on line \x1b[37m\x1b[1m%d:%d\n\x1b[0m",name,lineNum,charNum);
 }
 
+/*
+// Checks whether a specific id already exists in 
+// symbol table
+*/
 int doesExistInSymbolTable(char* name)
 {
 	STable entry = stList->table;
@@ -59,6 +66,9 @@ int doesExistInSymbolTable(char* name)
 	return 1;
 }
 
+/*
+// Converts ID, and data to one specific standard token
+*/
 token convertType(token type)
 {
 	if(type == INT)
@@ -72,6 +82,9 @@ token convertType(token type)
 	return INVALID;
 }
 
+/*
+// Gets the type of a variable from the symbol table.
+*/
 token checkTypeInFormedSymbolTable(char* name, int lineNum,int charNum)
 {
 	STable entry = stList->table;
@@ -137,6 +150,9 @@ void initialiseSymbolTable()
 	headList = stList;
 }
 
+/*
+// Adds a new variable to the symbol table.
+*/
 void addToCurrentSymbolTable(astTree data, token type,int idType)
 {
 	if(doesExistInSymbolTable(data->data.token_data))
@@ -161,6 +177,10 @@ void addToCurrentSymbolTable(astTree data, token type,int idType)
 	currentEntry->data = NULL;
 }
 
+/*
+// Add all the variables on the left hand side of
+// assignment type2 statement to symbol table.
+*/
 void findIdentifiers()
 {
 	currentASTNode = currentASTNode->childNode;
@@ -187,6 +207,10 @@ void findIdentifiers()
 	return;
 }
 
+/*
+// Finds all the parameters and return values
+// of a function and adds them to the symbol table
+*/
 void findParameters(int idType)
 {
 	currentASTNode = currentASTNode->childNode;
@@ -211,6 +235,11 @@ void findParameters(int idType)
 	return;
 }
 
+/*
+// Checks if an assignment statement has a matrix
+// assignment and if so adds its rows and columns
+// to symbol table.
+*/
 void findMatrixAssignment()
 {
 	astTree idNode = currentASTNode->childNode->childNode->childNode;
@@ -295,6 +324,10 @@ void findMatrixAssignment()
 	}
 }
 
+/*
+// Adds a symbol table for a if part as a child to the
+// the parent function symbol table.
+*/
 void addSymbolTableToList()
 {
 	if(stList->childList != NULL)
@@ -371,6 +404,10 @@ void addSymbolTableToList()
 	}
 }
 
+/*
+// Separate function to add symbol table for else part
+// as child to the parent function symbol table.
+*/
 void addSymbolTableForElsePartToList()
 {
 	if(stList->childList != NULL)
@@ -420,6 +457,10 @@ void addSymbolTableForElsePartToList()
 	currentASTNode = currentASTNode->childNode; 
 }
 
+/*
+// Adds symbol table or a new function as child to the
+// parent function symbol table.
+*/
 void addSymbolTableForFunctionToList()
 {
 	if(stList->childList != NULL)
@@ -475,20 +516,13 @@ void addSymbolTableForFunctionToList()
 	// Go into the function and find the variables.
 	currentASTNode = currentASTNode->sisterNode->childNode;
 	checkNextStatementAndRead();
-	// if(currentASTNode.ruleNum == 3)
-	// {
-	// 	currentASTNode = currentASTNode->childNode;
-	// 	createSymbolTables();
-	// }
-	// else
-	// {
-	// 	// It is a functionDef statement.
-	// 	currentASTNode = currentASTNode->childNode;
-	// 	goToNewFunctionScope();
-	// }
-	// createSymbolTables();
 }
 
+/*
+// Pops symbol table of current function from current 
+// symbol list ince it is
+// over and retuns to symbol table of parent function.
+*/
 void popSymbolTable()
 {
 	if(stList->parentList == NULL)
@@ -501,6 +535,10 @@ void popSymbolTable()
 	curScope--;
 }
 
+/*
+// Increases the scope value when a new if/else
+// statement has been seen.
+*/
 void goToNewScope()
 {
 	curScope++;
@@ -508,6 +546,10 @@ void goToNewScope()
 	addSymbolTableToList();
 }
 
+/*
+// Increases the scope value when a new function declaration
+// statement has been seen.
+*/
 void goToNewFunctionScope()
 {
 	curScope++;
@@ -515,6 +557,9 @@ void goToNewFunctionScope()
 	addSymbolTableForFunctionToList();
 }
 
+/*
+// Finds the next statement to compute.
+*/
 void findNextStatement()
 {
 	if(currentASTNode == NULL)
@@ -556,6 +601,10 @@ void findNextStatement()
 	}
 }
 
+/*
+// Checks whether a functionDef or stmt is occurring
+// and calls appropriate functions.
+*/
 void checkNextStatementAndRead()
 {
 	// This function should always receive currentASTNode pointing at stmtOrFunctionDef
@@ -580,6 +629,10 @@ void checkNextStatementAndRead()
 		return;
 }
 
+/*
+// Separate function to create symbol table for statements
+// within the if block.
+*/
 void createSymbolTablesForIfBlock()
 {
 	while(1)
@@ -613,6 +666,10 @@ void createSymbolTablesForIfBlock()
 		return;
 }
 
+/*
+// Finds the ifstmt rule once all the statements within
+// if block are over in order to go back to parent function.
+*/
 void findIfStatement()
 {
 	if(currentASTNode == NULL)
@@ -628,6 +685,10 @@ void findIfStatement()
 	}
 }
 
+/*
+// Create symbol table based on different statements
+// in a function scope.
+*/
 void createSymbolTables()
 {
 	int rule = currentASTNode->ruleNum - 7;
@@ -686,26 +747,10 @@ void createSymbolTables()
 	return;
 }
 
-void printSymbolTable(STList list)
-{
-	STList readList = list;
-	while(readList != NULL)
-	{
-		STable entry = readList->table;
-		while(entry->data != NULL)
-		{
-			printf("%20s%15s(%2d-%2d)%20s\n",entry->data->value,readList->functionName,readList->startLineNumber,readList->endLineNumber,getTokenName(entry->data->type));
-			entry = entry->nextEntry;
-		}
-		if(readList->childList != NULL)
-			printSymbolTable(readList->childList);
-		if(readList->sisterList != NULL)
-			readList = readList->sisterList;
-		else
-			readList = NULL;
-	}
-}
-
+/*
+// Main function called by driver to generate symbol table
+// for the code using the AST.
+*/
 STList generateSymbolTables(astTree astRoot)
 {
 	stList = malloc(sizeof(struct _STList));

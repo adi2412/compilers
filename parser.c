@@ -176,7 +176,11 @@ void pushItems(terminals terms)
 
 /*************** Tree functions *******************/
 
-
+/*
+// Since the stack and the input terminal have matched,
+// fill in some of the token data into the parse tree,
+// and move on to the next node.
+*/
 void goToNextNode(tokenInfo token)
 {
 	if(currentNode->element.tokValue == token->token_name)
@@ -212,6 +216,10 @@ void goToNextNode(tokenInfo token)
 	}
 }
 
+/*
+// Finds the next node to work on, whether it is a sister
+// node or a parent node.
+*/
 void findNextNode()
 {
 	tree sister = currentNode->sisterNode;
@@ -242,6 +250,10 @@ void findNextNode()
 	}
 }
 
+/*
+// Adds a child node to the current tree node through the
+// RHS of the grammmar rules
+*/
 void addChildNodes(rule rule)
 {
 	nonTerminal LHSTerm = rule->nonterm_value;
@@ -293,6 +305,9 @@ void addChildNodes(rule rule)
 
 /*************** End ********************/
 
+/*
+// Finds the appropriate rule for the given rule number.
+*/
 rule findRule(int ruleNum, rule headRule)
 {
 	int i = 1;
@@ -338,6 +353,12 @@ void printTree(tree node)
 	}	
 }
 
+/*
+// The main function called by the driver.
+// params-
+//		input: Genertaed tokens list, non terminals and their 			first, follow sets, and the grammar rules.
+//		output: ParseTree or error if there is a parsing error
+*/
 tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 {
 	nonterm nonTerms = nts;
@@ -353,8 +374,7 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 
 	while(head->element.tokValue != DOL && readToken != NULL)
 	{
-		// if(readToken->token_value != NULL)
-		// 	printf(" with value %s", readToken->token_value);
+		// Keep parsing till either the stack or tokens run out.
 		if(!head->element.flag)
 		{
 			if(head->element.tokValue == readToken->token_name)
@@ -389,7 +409,7 @@ tree parse(nonterm nts, tokenInfo toks, grammar hdRule)
 			{
 				// No entry in Parse Table.
 				char *err = malloc(sizeof(char)*ERRLINESIZE);
-				sprintf(err,"Entry not found in parse table for %s and %s.",getNonTermValue(head->element.nontermValue),getTokenName(readToken->token_name));
+				sprintf(err,"Invalid term %s found ",readToken->token_value);
 				showPError(err,readToken->lineNumber);
 				
 			}
