@@ -40,6 +40,9 @@ int main(int argc,char* argv[])
 	printf("->Symbol table generated\n");
 	printf("->Type checker, semantic analyzer implemented\n");
 	printf("->Code generation could not be completed\n\x1b[0m");
+
+	printf("\x1b[4m\x1b[40m\x1b[31m\x1b[1m\n\tLEVEL 3: Symbol table/type Checking/AST/Semantic Rules modules works\n\n\x1b[0m");
+		
 	printf("\n\x1b[33m\x1b[1mPress option for the defined task:\x1b[0m\n");
 	printf("\x1b[37m1:\x1b[22m\x1b[1m for printing token list\x1b[0m\n");
 	printf("\x1b[37m2:\x1b[22m\x1b[1m for parsing and producing Parse Tree\x1b[0m\n");
@@ -49,7 +52,7 @@ int main(int argc,char* argv[])
 	printf("\x1b[37m\x1b[9m6:\x1b[22m\x1b[1m for generating code.asm (incomplete)\x1b[0m\n");
 	int choice;
 	scanf("%d",&choice);
-	printf("\x1b[4m\x1b[40m\x1b[31m\x1b[1mLEVEL 3: Symbol table/type Checking/AST/Semantic Rules modules works\n\n\x1b[0m");
+	
 	if(choice == 1)
 	{
 		char* sourceName = argv[1];
